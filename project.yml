@@ -10,7 +10,7 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: minimal
-    MARKETING_VERSION: "0.1.7"
+    MARKETING_VERSION: "0.1.8"
     CURRENT_PROJECT_VERSION: "2"
     ENABLE_HARDENED_RUNTIME: YES
     # TCC（屏幕录制/辅助功能）授权跟签名身份走。ad-hoc 签名每次编译都是新身份，
