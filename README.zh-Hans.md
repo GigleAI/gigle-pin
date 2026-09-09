@@ -8,9 +8,18 @@ macOS 原生的截图、贴图与录屏工具 ——<br>
 <p align="center">
   <a href="https://gigle.ai/pin/"><b>官网</b></a> ·
   <a href="https://gigle.ai/pin/#download"><b>下载 Mac 版</b></a> ·
-  <a href="https://gigle.ai/pin/skill/">给 AI 的说明书</a> ·
-  <a href="README.md">English</a>
+  <a href="https://gigle.ai/pin/skill/">给 AI 的说明书</a>
 </p>
+
+<p align="center"><sub>
+  <a href="README.md">English</a> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="README.es.md">Español</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a> ·
+  <b>简体中文</b>
+</sub></p>
 
 <p align="center">
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-black">

@@ -8,9 +8,18 @@ and the first one an AI agent can drive without touching your mouse.</p>
 <p align="center">
   <a href="https://gigle.ai/pin/"><b>Website</b></a> ·
   <a href="https://gigle.ai/pin/#download"><b>Download for Mac</b></a> ·
-  <a href="https://gigle.ai/pin/skill/">Agent skill</a> ·
-  <a href="README.zh-Hans.md">简体中文</a>
+  <a href="https://gigle.ai/pin/skill/">Agent skill</a>
 </p>
+
+<p align="center"><sub>
+  <b>English</b> ·
+  <a href="README.de.md">Deutsch</a> ·
+  <a href="README.es.md">Español</a> ·
+  <a href="README.fr.md">Français</a> ·
+  <a href="README.ja.md">日本語</a> ·
+  <a href="README.ko.md">한국어</a> ·
+  <a href="README.zh-Hans.md">简体中文</a>
+</sub></p>
 
 <p align="center">
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-black">
