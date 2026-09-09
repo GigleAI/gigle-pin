@@ -1,0 +1,4 @@
+// 日本語
+// The sentence the user reads in the system microphone prompt. The value in Info.plist is only
+// a fallback — without this file they would see English at the moment it matters.
+"NSMicrophoneUsageDescription" = "画面と一緒にあなたのナレーションを録音します。ナレーションをオンにして録画しているときだけ使用します。";

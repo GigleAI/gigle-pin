@@ -1,0 +1,147 @@
+name: Pin
+options:
+  bundleIdPrefix: ai.gigle
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  xcodeVersion: "2620"
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    MARKETING_VERSION: "0.1.7"
+    CURRENT_PROJECT_VERSION: "2"
+    ENABLE_HARDENED_RUNTIME: YES
+    # TCC（屏幕录制/辅助功能）授权跟签名身份走。ad-hoc 签名每次编译都是新身份，
+    # 会导致每编译一次就要重新授权一遍 —— 对截图工具是灾难。用固定的开发者身份。
+    #
+    # 团队用**公司账号** GIGLE PTE. LTD.（`ai.gigle.pin` 就注册在这个团队下，
+    # 挂别的团队自动签名会因为 Bundle ID 已被占用而失败）。
+    # 发布签名不看这里 —— 发布脚本编译时直接指定 Developer ID 证书。
+    # 团队固定用公司账号 27LTRF96FR（`ai.gigle.pin` 注册在它名下）。
+    #
+    # Debug 用 Apple Development + 自动签名，**Developer ID 只留给发布**。
+    # 分开的理由不是方便，是 Developer ID 的私钥属于发布凭证，不该为了日常编译
+    # 散进每台开发机的钥匙串 —— 团队多一个人就多一份泄露面。
+    #
+    # 代价是开发版和发布版签名身份不同，**两者之间来回切要各授权一次屏幕录制**
+    # （TCC 跟签名身份走）。这是一次性的，比私钥四处散落划算。
+    CODE_SIGN_IDENTITY: "Apple Development"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: 27LTRF96FR
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # **必须是 universal**。macOS 14 本身支持 Intel（2018 年后的机型都能升），
+    # 只出 arm64 的话那些机器连装都装不上，而且不会有任何提示说明为什么。
+    # Xcode 默认只编当前架构，所以这两条都要显式写。
+    ARCHS: "$(ARCHS_STANDARD)"
+    ONLY_ACTIVE_ARCH: NO
+
+targets:
+  Pin:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/Pin
+      - path: Resources/AppIcon.icns
+        buildPhase: resources
+      # Every language ships. A .lproj on disk that is not listed here is dead weight: it
+      # translates nothing, and the picker offering that language becomes a promise the
+      # bundle cannot keep — which is exactly what ja/ko/de/fr/es were until now.
+      - path: Resources/en.lproj
+        buildPhase: resources
+      - path: Resources/zh-Hans.lproj
+        buildPhase: resources
+      - path: Resources/ja.lproj
+        buildPhase: resources
+      - path: Resources/ko.lproj
+        buildPhase: resources
+      - path: Resources/de.lproj
+        buildPhase: resources
+      - path: Resources/fr.lproj
+        buildPhase: resources
+      - path: Resources/es.lproj
+        buildPhase: resources
+      # 给 AI 的说明书随包走（Contents/Resources/pin-screen-recorder/SKILL.md）。
+      # agent 被告知"用 Pin"时第一个动作多半是翻 /Applications 里的包，它在这儿就能找到。
+      # **不往用户目录写任何东西** —— 那是入侵；要装进 Codex/Claude Code 的目录由用户在设置的「AI」栏里按一下。
+      # 源在 .agents/skills/pin-screen-recorder/，`scripts/skill-sync.sh` 同步到这里。
+      # 用 copyFiles 而不是文件夹引用：XcodeGen 的 `type: folder` 会把路径解析到仓库根目录，编不过。
+      - path: Resources/pin-screen-recorder/SKILL.md
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: pin-screen-recorder
+      - path: Resources/pin-screen-recorder/scripts/pin-record.sh
+        buildPhase:
+          copyFiles:
+            destination: resources
+            subpath: pin-screen-recorder/scripts
+    info:
+      path: Resources/Info.plist
+      properties:
+        # 启动台 / Finder / Spotlight 显示「Gigle Pin」：跟商店名一致（审核指南 2.3.8 要求相似），
+        # 且 "Pin" 是通用词，旁边可能就有另一个叫 Pin 的 App。**App 内部仍叫 Pin**（菜单、提示），
+        # 那里天天看、要短 —— 跟「Microsoft Word / Word」一个做法（Tim 2026-09-05 定）。
+        # Bundle ID 不动，授权和偏好都保留。
+        # 名字、Bundle ID、URL scheme、角色全从构建设置取，默认就是正式版。
+        # `scripts/build-director.sh` 只覆盖这几个变量就能出一份「Gigle Pin Director」：
+        # 同一份代码、不同 Bundle ID —— 专门给 AI 用来**录 Pin 自己的操作**
+        # （Pin 录屏会排除自己的蒙层/工具条，要拍 Pin 的演示只能由另一个进程来录）。
+        # 用构建变量而不是启动参数，因为 LaunchServices 按 Bundle ID 路由 pin://、
+        # TCC 按它记权限、偏好按它分域 —— 同一个 Bundle ID 跑两个进程会互相抢。
+        CFBundleName: $(PRODUCT_NAME)
+        CFBundleDisplayName: $(PRODUCT_NAME)
+        PinRole: $(PIN_ROLE)
+        # 包内那份给 AI 的说明书在哪（相对 Contents/Resources）。翻包的 agent 看这个键就够了。
+        PinAgentSkill: pin-screen-recorder/SKILL.md
+        CFBundleIconFile: AppIcon
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundlePackageType: APPL
+        NSPrincipalClass: NSApplication
+        # 从构建设置取，不要写死 —— 商店脚本靠 CURRENT_PROJECT_VERSION 递增构建号，
+        # 写死的话传进去的构建号根本不会进包（2026-09-05 首次商店归档就是这么栽的：包里还是 2）。
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSUIElement: true
+        # Mac App Store 校验必填：没有类别直接被拒收。
+        LSApplicationCategoryType: public.app-category.productivity
+        # 不用加密（只有系统 TLS），声明了就不用每次上传都去回答出口合规问卷。
+        ITSAppUsesNonExemptEncryption: false
+        LSMinimumSystemVersion: "14.0"
+        # 开发区域 = 匹配不到任何本地化时的兜底语言。写 zh-Hans 的话，
+        # 法语/德语/日语用户会退回**中文**；商店主要语言是 English (U.S.)，
+        # 兜底也该是英文。中文用户走的是精确匹配 zh-Hans，不受影响。
+        CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, zh-Hans, ja, ko, de, fr, es]
+        # 主体是**签名证书上的那个法人** GIGLE PTE. LTD.，不是 GigleAI 这个品牌名 ——
+        # 商店的版权字段、官网页脚、分发证书都是它，LICENSE 也已经对齐。
+        NSHumanReadableCopyright: "Copyright © 2026 GIGLE PTE. LTD."
+        # 这句是系统权限弹框里用户**直接读到**的字，别留旧产品名，也别写成开发者黑话。
+        # 摄像头和 Apple Events 的用途说明已删 —— 代码里根本没用到（只用 .audio），
+        # 白要权限在公证和用户信任上都是扣分项。
+        # 这里的值只是兜底，真正显示的是 `*.lproj/InfoPlist.strings` 里的译文。
+        NSMicrophoneUsageDescription: "Pin records your narration along with the screen. It is used only while you are recording with narration turned on."
+        CFBundleURLTypes:
+          - CFBundleURLName: $(PRODUCT_BUNDLE_IDENTIFIER)
+            CFBundleURLSchemes: [$(PIN_URL_SCHEME)]
+    entitlements:
+      path: Resources/Pin.entitlements
+      properties:
+        # 没有沙盒 —— 截图工具要读整个屏幕、写用户指定的目录。
+        com.apple.security.app-sandbox: false
+        # 硬化运行时（ENABLE_HARDENED_RUNTIME）下，访问麦克风**必须**有这一条，
+        # 否则录旁白会被系统直接拒掉。屏幕录制不需要 entitlement，它走 TCC。
+        com.apple.security.device.audio-input: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.gigle.pin
+        PRODUCT_NAME: Gigle Pin
+        PIN_URL_SCHEME: pin          # Director 覆盖成 pindirector
+        PIN_ROLE: capture            # Director 覆盖成 director：热键默认 F9 一家、菜单栏小鸟镜像
+        # 产品名带空格 → Swift 模块名会自动变成 Gigle_Pin，import/测试全崩。模块名钉死成 Pin，跟产品名解耦
+        # （Magpie 改显示名那天测试就是这么崩的）。
+        PRODUCT_MODULE_NAME: Pin
+        GENERATE_INFOPLIST_FILE: false
+        INFOPLIST_KEY_NSPrincipalClass: NSApplication
+        COMBINE_HIDPI_IMAGES: YES

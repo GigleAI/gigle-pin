@@ -1,0 +1,43 @@
+# XcodeGen generates it; project.yml is the source of truth
+*.xcodeproj
+*.xcworkspace
+
+# Xcode
+build/
+build-director/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+*.hmap
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Build products
+dist/
+*.app
+*.dmg
+*.zip
+
+# Signing material — never commit any of this
+*.p12
+*.p8
+*.pem
+*.cer
+*.certSigningRequest
+*.mobileprovision
+ExportOptions.plist
+.env
+.env.local
+
+# macOS
+.DS_Store
+._*
+
+# Editors
+.idea/
+.vscode/
+*.swp

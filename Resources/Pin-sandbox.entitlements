@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Mac App Store 版必须开沙盒。这份 entitlements 只给评估/上架用，
+	     官网版（Developer ID）继续用 Resources/Pin.entitlements，两条线并存。 -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- 录旁白 -->
+	<key>com.apple.security.device.audio-input</key>
+	<true/>
+	<!-- 用户在"选择保存位置"里挑的目录，靠这条 + 安全作用域书签才能长期写 -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<!-- 这里**不加** com.apple.security.files.bookmarks.app-scope。
+	     它历史上是"让安全作用域书签能跨重启"的开关，看代码会觉得非有不可
+	     （保存目录正是靠这种书签跨重启的）。2026-09-06 实测：加与不加，
+	     `sandbox-check.sh` 里"建得出书签 / 重启后书签还认得那个目录"两项都通过 ——
+	     macOS 14+ 已经不需要它了。按「entitlements 只留必需的」这条铁律撤掉。
+	     要再加回来，先让那两项测试在没有它的时候真的变红。 -->
+	<!-- 默认保存位置在 ~/Pictures/Pin，沙盒里访问图片库要这条 -->
+	<key>com.apple.security.assets.pictures.read-write</key>
+	<true/>
+</dict>
+</plist>
