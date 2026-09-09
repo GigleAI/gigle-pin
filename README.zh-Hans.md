@@ -57,10 +57,12 @@ brew install xcodegen && xcodegen generate && scripts/build.sh
 
 ## 演示
 
-https://github.com/user-attachments/assets/a6e6b330-d3fe-481a-9fa9-78a14628964c
+https://github.com/user-attachments/assets/f8750ca7-5ed7-4546-9103-ece4fdcddd17
 
 <p align="center"><sub>19 秒（有声音，播放器默认静音，记得取消静音）：框住它，按回车，粘到你要的地方。
-也可以在 <a href="https://gigle.ai/pin/">gigle.ai/pin</a> 看。</sub></p>
+<b>上面没有播放器？</b>那个视频存在 GitHub 自己的附件库里，它掉过一次 ——
+可以去 <a href="https://gigle.ai/pin/">gigle.ai/pin</a> 看，或者直接打开仓库里的
+<a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a>。</sub></p>
 
 ## 它能做什么
 

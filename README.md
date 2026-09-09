@@ -59,10 +59,12 @@ Set `DEVELOPMENT_TEAM` in `project.yml` to your own team first — see
 
 ## Demo
 
-https://github.com/user-attachments/assets/a6e6b330-d3fe-481a-9fa9-78a14628964c
+https://github.com/user-attachments/assets/f8750ca7-5ed7-4546-9103-ece4fdcddd17
 
 <p align="center"><sub>19 seconds, with sound — the player starts muted: frame it, press Return, paste where you need it.
-Also at <a href="https://gigle.ai/pin/">gigle.ai/pin</a>.</sub></p>
+<b>No player above?</b> GitHub serves that video from its own attachment store, which has dropped it once before —
+watch it at <a href="https://gigle.ai/pin/">gigle.ai/pin</a> instead, or open
+<a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a> in this repository.</sub></p>
 
 ## What it does
 
