@@ -72,7 +72,7 @@ https://github.com/user-attachments/assets/b58ae0e9-13d7-4a42-98de-7acac5ec5c8d
 
 <p align="center"><sub>実際の使用、43 秒、音声あり（プレーヤーは消音で始まります）。
 <b>上にプレーヤーが出ませんか？</b> この動画は GitHub 自身の添付ファイル置き場から配信されていて、以前に一度消えたことがあります。
-その場合は <a href="https://gigle.ai/pin/">gigle.ai/pin</a> で見るか、このリポジトリの短い方の映像
+その場合は <a href="https://gigle.ai/pin/">gigle.ai/pin</a> で見るか、このリポジトリにある同じ映像
 <a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a> を開いてください。</sub></p>
 
 ## できること

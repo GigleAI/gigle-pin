@@ -74,7 +74,7 @@ https://github.com/user-attachments/assets/b58ae0e9-13d7-4a42-98de-7acac5ec5c8d
 <p align="center"><sub>Uso real, 43 segundos, con sonido: el reproductor empieza silenciado.
 <b>¿No ves el reproductor?</b> GitHub sirve ese vídeo desde su propio almacén de adjuntos, que ya perdió uno —
 míralo en <a href="https://gigle.ai/pin/">gigle.ai/pin</a> o abre
-<a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a>, la película corta, en este repositorio.</sub></p>
+<a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a>, la misma película, en este repositorio.</sub></p>
 
 ## Qué hace
 

@@ -72,7 +72,7 @@ https://github.com/user-attachments/assets/b58ae0e9-13d7-4a42-98de-7acac5ec5c8d
 
 <p align="center"><sub>실제 사용, 43초, 소리 있음 — 플레이어는 음소거로 시작합니다.
 <b>위에 플레이어가 안 보이나요?</b> 이 영상은 GitHub 자체 첨부 저장소에서 제공되는데, 전에 한 번 사라진 적이 있습니다.
-<a href="https://gigle.ai/pin/">gigle.ai/pin</a>에서 보거나, 이 저장소에 있는 더 짧은 영상
+<a href="https://gigle.ai/pin/">gigle.ai/pin</a>에서 보거나, 이 저장소에 있는 같은 영상
 <a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a>를 열어 보세요.</sub></p>
 
 ## 무엇을 하나

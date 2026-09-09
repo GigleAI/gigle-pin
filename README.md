@@ -73,7 +73,7 @@ https://github.com/user-attachments/assets/b58ae0e9-13d7-4a42-98de-7acac5ec5c8d
 <p align="center"><sub>Real use, 43 seconds, with sound — the player starts muted.
 <b>No player above?</b> GitHub serves that video from its own attachment store, which has dropped one before —
 watch it at <a href="https://gigle.ai/pin/">gigle.ai/pin</a> instead, or open
-<a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a>, the shorter film, in this repository.</sub></p>
+<a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a> — the same film — in this repository.</sub></p>
 
 ## What it does
 

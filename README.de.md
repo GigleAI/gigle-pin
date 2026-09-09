@@ -76,7 +76,7 @@ https://github.com/user-attachments/assets/b58ae0e9-13d7-4a42-98de-7acac5ec5c8d
 <p align="center"><sub>Echter Einsatz, 43 Sekunden, mit Ton — der Player startet stumm.
 <b>Kein Player oben?</b> GitHub liefert das Video aus seinem eigenen Anhang-Speicher, der schon einmal eines verloren hat —
 sieh es dir stattdessen auf <a href="https://gigle.ai/pin/">gigle.ai/pin</a> an oder öffne
-<a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a>, den kürzeren Film, in diesem Repository.</sub></p>
+<a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a>, denselben Film, in diesem Repository.</sub></p>
 
 ## Was sie kann
 

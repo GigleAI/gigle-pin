@@ -76,7 +76,7 @@ https://github.com/user-attachments/assets/b58ae0e9-13d7-4a42-98de-7acac5ec5c8d
 <p align="center"><sub>Usage réel, 43 secondes, avec le son — le lecteur démarre en sourdine.
 <b>Pas de lecteur ci-dessus ?</b> GitHub sert cette vidéo depuis son propre stockage de pièces jointes, qui en a déjà perdu une —
 regardez-la sur <a href="https://gigle.ai/pin/">gigle.ai/pin</a>, ou ouvrez
-<a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a>, le film court, dans ce dépôt.</sub></p>
+<a href="docs/media/pin-film.mp4">docs/media/pin-film.mp4</a>, le même film, dans ce dépôt.</sub></p>
 
 ## Ce qu’elle fait
 
