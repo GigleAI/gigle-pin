@@ -245,6 +245,7 @@
 "settings.permScreen" = "화면 기록";
 "settings.permScreenWhy2" = "필수. 캡처, 고정, 녹화가 모두 여기에 달려 있습니다. 이것 없이는 아무것도 되지 않습니다.";
 "settings.pinShadow" = "고정 이미지에 그림자";
+"settings.privacyPolicy" = "개인정보 처리방침";
 "settings.ripple2" = "클릭할 때 물결을 표시해 어디를 눌렀는지 보이기";
 "settings.saveTo" = "저장 위치";
 "settings.sec" = "%@초";

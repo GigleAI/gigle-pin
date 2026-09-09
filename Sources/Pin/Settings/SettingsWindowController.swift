@@ -83,16 +83,55 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
         label.textColor = .tertiaryLabelColor
         label.isSelectable = true
 
+        // **The privacy policy has to be reachable from inside the app**, not only from the App
+        // Store listing — App Review guideline 5.1.1 asks for both, and the store metadata field
+        // alone is a rejection. The footer is where it belongs: it is under every pane, so there is
+        // no pane to find first, and it sits next to the version, which is the other thing people
+        // come to a footer for.
+        //
+        // `NSWorkspace.open` hands the URL to the system, which launches the user's browser.
+        // **Our process still makes no network connection** — no URLSession anywhere in the source,
+        // no networking framework linked, and the sandboxed build has no `network.client`
+        // entitlement, so it could not connect even if it tried. A WKWebView would have changed all
+        // three of those, and the answer on the App Privacy questionnaire with them.
+        let policy = NSButton(title: L("settings.privacyPolicy", "Privacy Policy"), target: self,
+                              action: #selector(openPrivacyPolicy))
+        policy.isBordered = false
+        policy.bezelStyle = .inline
+        policy.contentTintColor = .linkColor
+        policy.font = .systemFont(ofSize: 11)
+        policy.focusRingType = .none
+
+        let dot = NSTextField(labelWithString: "·")
+        dot.font = .systemFont(ofSize: 11)
+        dot.textColor = .tertiaryLabelColor
+
+        let line = NSStackView(views: [label, dot, policy])
+        line.orientation = .horizontal
+        line.spacing = 6
+        line.alignment = .firstBaseline
+
         // No rule above it. A separator here would have to span the pane, and the first attempt
         // bound its width to the stack — which sizes to the label — so it came out a half-width
         // rule floating in the middle. The grey already separates this from the pane; a line would
         // only be more furniture.
-        let box = NSStackView(views: [label])
+        let box = NSStackView(views: [line])
         box.orientation = .vertical
         box.alignment = .centerX
         box.edgeInsets = NSEdgeInsets(top: 14, left: 0, bottom: 14, right: 0)
         return box
     }()
+
+    /// The address is written once, here. It is also in the App Store listing and on the site;
+    /// three copies of a URL is three chances for one of them to rot quietly.
+    static let privacyPolicyURL = URL(string: "https://gigle.ai/pin/privacy.html")!
+
+    @objc private func openPrivacyPolicy() {
+        NSWorkspace.shared.open(Self.privacyPolicyURL)
+        #if DEBUG
+        print("[settings] opened privacy policy")
+        #endif
+    }
 
     private var loginPermRow: NSView?
     private var loginStatus: NSTextField!

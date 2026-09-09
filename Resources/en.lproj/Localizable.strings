@@ -245,6 +245,7 @@
 "settings.permScreen" = "Screen Recording";
 "settings.permScreenWhy2" = "Required. Capture, pinning and recording all depend on it; nothing works without it.";
 "settings.pinShadow" = "Pins cast a shadow";
+"settings.privacyPolicy" = "Privacy Policy";
 "settings.ripple2" = "Ripple on click, so viewers see where you clicked";
 "settings.saveTo" = "Save to";
 "settings.sec" = "%@ s";

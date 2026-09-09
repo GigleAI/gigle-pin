@@ -245,6 +245,7 @@
 "settings.permScreen" = "Enregistrement de l’écran";
 "settings.permScreenWhy2" = "Obligatoire. La capture, l’épinglage et l’enregistrement en dépendent tous ; rien ne fonctionne sans.";
 "settings.pinShadow" = "Ombre sous les épingles";
+"settings.privacyPolicy" = "Confidentialité";
 "settings.ripple2" = "Onde au clic, pour que le spectateur voie où tu as cliqué";
 "settings.saveTo" = "Enregistrer dans";
 "settings.sec" = "%@ s";

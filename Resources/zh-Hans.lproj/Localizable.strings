@@ -245,6 +245,7 @@
 "settings.permScreen" = "屏幕录制";
 "settings.permScreenWhy2" = "必需。截图、贴图、录屏都靠它，没有就什么都做不了。";
 "settings.pinShadow" = "贴图带阴影";
+"settings.privacyPolicy" = "隐私政策";
 "settings.ripple2" = "点击时显示光晕，让观众看清你点了哪";
 "settings.saveTo" = "保存到";
 "settings.sec" = "%@ 秒";

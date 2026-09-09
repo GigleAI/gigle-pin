@@ -245,6 +245,7 @@
 "settings.permScreen" = "Bildschirmaufnahme";
 "settings.permScreenWhy2" = "Erforderlich. Aufnehmen, Anheften und Video hängen alle daran; ohne sie geht nichts.";
 "settings.pinShadow" = "Angeheftetes wirft Schatten";
+"settings.privacyPolicy" = "Datenschutz";
 "settings.ripple2" = "Klick als Welle zeigen, damit man sieht, wohin du geklickt hast";
 "settings.saveTo" = "Sichern in";
 "settings.sec" = "%@ s";

@@ -245,6 +245,7 @@
 "settings.permScreen" = "画面収録";
 "settings.permScreenWhy2" = "必須。キャプチャ、貼り付け、録画のすべてがこれに依存します。これなしでは何も動きません。";
 "settings.pinShadow" = "貼り付けに影を付ける";
+"settings.privacyPolicy" = "プライバシーポリシー";
 "settings.ripple2" = "クリック時に波紋を表示して、どこを押したか見せる";
 "settings.saveTo" = "保存先";
 "settings.sec" = "%@ 秒";

@@ -245,6 +245,7 @@
 "settings.permScreen" = "Grabación de pantalla";
 "settings.permScreenWhy2" = "Obligatorio. La captura, el fijado y la grabación dependen de ello; sin él no funciona nada.";
 "settings.pinShadow" = "Las fijadas proyectan sombra";
+"settings.privacyPolicy" = "Privacidad";
 "settings.ripple2" = "Onda al hacer clic, para que se vea dónde has pulsado";
 "settings.saveTo" = "Guardar en";
 "settings.sec" = "%@ s";
