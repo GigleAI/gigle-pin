@@ -20,6 +20,7 @@
 "bar.filled" = "塗りつぶし: べた塗り";
 "bar.gif" = "GIF に変換 — 容量は増えますが、どこでも再生できます   ·   G";
 "bar.hollow" = "中抜き: 輪郭のみ";
+"bar.keepTake" = "このテイクを残す — %@ に保存   ·   S";
 "bar.pin" = "参照用に最前面へ貼り付け。拡大もドラッグもできます   ·   P";
 "bar.record" = "この範囲の録画に切り替え   ·   R";
 "bar.redo" = "このテイクを捨てて同じ範囲をもう一度録画   ·   R";
@@ -177,8 +178,11 @@
 "review.colorLabel" = "色";
 "review.copiedFile" = "ファイルをコピーしました — Slack、メール、Finder に ⌘V で送れます";
 "review.copiedPath" = "パスをコピーしました: %@";
+"review.discarded" = "未保存 — このテイクは破棄されました";
+"review.discardedHow" = "設定 ▸ 録画 で、すべてのテイクを自動で残せます";
 "review.gifDone2" = "GIF をコピーしました · %@ · 保存先 %@";
 "review.gifing" = "GIF を作成中 — 長いクリップは少し時間がかかります…";
+"review.kept" = "%@ に保存しました";
 "review.life" = "新しく描いた線が画面に残る時間";
 "review.lifeForever" = "クリップ全体";
 "review.lifeLabel" = "表示時間";
@@ -191,7 +195,9 @@
 "review.sheeting" = "キーフレームを選んで並べています…";
 "review.staleClipboard" = " · クリップボードのファイルには注釈が入っていません。⏎ でコピーし直してください";
 "review.title" = "再生 · 注釈";
+"review.titleUnsaved" = "再生 · 未保存";
 "review.toolHint" = "%@: フレームに描きます。この印は %@ から %.1f 秒間表示されます";
+"review.unsavedHint" = "未保存 — S で残せます。コピーや書き出しでも残ります";
 "review.width" = "線の太さ";
 "review.widthLabel" = "太さ";
 "review.zoom" = "映像を拡大 — 録画した範囲が小さいときに";
@@ -224,6 +230,7 @@
 "settings.inkForever" = "残したまま";
 "settings.inkKey" = "描くときのキー";
 "settings.inkLife" = "線が残る時間";
+"settings.keepRecordings" = "保存を押したテイクだけでなく、すべての録画を残す";
 "settings.langChanged" = "変更しました — Pin を再起動すると反映されます。";
 "settings.language" = "言語";
 "settings.launchAtLogin" = "ログイン時に Pin を起動";
@@ -233,6 +240,7 @@
 "settings.lookNote3" = "ライト/ダークとカラーは、キャプチャのツールバー、録画 HUD、再生バーにも適用されます。選択オーバーレイは常に暗くなります。言語の変更には再起動が必要です。";
 "settings.magnifier" = "ルーペを表示";
 "settings.mic" = "マイクを録音";
+"settings.openDir" = "開く";
 "settings.openSysPrefs" = "システム設定を開く";
 "settings.palette" = "カラー";
 "settings.permAX" = "アクセシビリティ";

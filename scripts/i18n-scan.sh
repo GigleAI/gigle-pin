@@ -9,7 +9,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 python3 - <<'PY'
-import re, os, glob
+import re, os, glob, sys
 
 pairs = {}   # key -> English
 
@@ -45,6 +45,7 @@ def dedent_swift(block: str) -> str:
     cut = min(indents) if indents else 0
     return "\n".join(l[cut:] if len(l) >= cut else l for l in lines).strip()
 
+conflicts = []
 for f in glob.glob("Sources/**/*.swift", recursive=True):
     raw = open(f).read()
     # Skip comment lines — an example in a doc comment is not a real string
@@ -64,8 +65,13 @@ for f in glob.glob("Sources/**/*.swift", recursive=True):
             continue
         if k in pairs and pairs[k] != zh:
             print(f"⚠️  key conflict {k}: {pairs[k]!r} vs {zh!r}")
+            conflicts.append(k)
         pairs[k] = zh
 print(f"{len(pairs)} strings found")
+if conflicts:
+    # Two call sites, one key, different English: one of them is showing the wrong sentence, and
+    # every translation table can only hold one of them. Stop here rather than write either.
+    sys.exit(f"✗ {len(conflicts)} key(s) used with two different English strings: {conflicts} — rename one")
 
 def load(path):
     if not os.path.exists(path): return {}

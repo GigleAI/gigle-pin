@@ -31,7 +31,12 @@ final class OverlayView: NSView {
                 case handle(Int, anchor: NSRect)       // 0..7, see handlePoints
     }
 
-    private let snapshot: DisplaySnapshot
+    /// The screen this overlay covers. Known at construction; the frozen picture is not.
+    let display: NSScreen
+    /// The frozen screen, set by the window once the capture lands. The overlay is built **before**
+    /// the capture finishes — that is what hides its construction behind the capture — so for a few
+    /// dozen milliseconds it exists without one. Nothing is drawn until it arrives.
+    var snapshot: DisplaySnapshot? { didSet { needsDisplay = true } }
     private let detector: WindowDetector
     private var phase: Phase = .detecting
     private var mouse: NSPoint = .zero
@@ -58,10 +63,10 @@ final class OverlayView: NSView {
 
     // MARK: Lifecycle
 
-    init(snapshot: DisplaySnapshot, detector: WindowDetector) {
-        self.snapshot = snapshot
+    init(screen: NSScreen, detector: WindowDetector) {
+        self.display = screen
         self.detector = detector
-        super.init(frame: NSRect(origin: .zero, size: snapshot.frame.size))
+        super.init(frame: NSRect(origin: .zero, size: screen.frame.size))
         toolbar.configure(mode: mode)
         toolbar.isHidden = true
         toolbar.onAction = { [weak self] in self?.perform($0) }
@@ -128,10 +133,31 @@ final class OverlayView: NSView {
 
     private func refreshCandidate() {
         guard Preferences.shared.autoDetectWindows else { candidate = nil; return }
+        let point = toGlobal(mouse)
+        // The window-level answer now — from the list read when the overlay opened, no IPC.
+        let hit = detector.target(at: point)
+        setCandidate(hit)
+        // The control-level answer a few milliseconds later, from the app that owns that window,
+        // applied only if the mouse is still where the question was asked. See `WindowDetector.refine`.
+        guard let pid = hit?.pid else { return }
+        detector.refine(at: point, app: pid) { [weak self] asked, target in
+            guard let self, let target else { return }
+            switch self.phase {
+            case .detecting, .pendingDown: break
+            default: return
+            }
+            let now = self.toGlobal(self.mouse)
+            guard hypot(asked.x - now.x, asked.y - now.y) < 1 else { return }
+            self.setCandidate(target)
+            self.needsDisplay = true
+        }
+    }
+
+    private func setCandidate(_ t: SnapTarget?) {
         #if DEBUG
         let before = candidate?.frame
         #endif
-        if let t = detector.target(at: toGlobal(mouse)) {
+        if let t {
             let local = toLocal(t.frame).intersection(bounds)
             candidate = local.isEmpty ? nil : SnapTarget(frame: local, title: t.title, depth: t.depth)
         } else {
@@ -425,12 +451,12 @@ final class OverlayView: NSView {
 
     /// The pixels the mosaic works from: a view rect → that part of the screen.
     private func mosaicSource(_ r: NSRect) -> CGImage? {
-        snapshot.crop(toNS: toGlobal(r))
+        snapshot?.crop(toNS: toGlobal(r))
     }
 
     /// The selection and its annotations composited into one pixel image.
     private func composeResult(_ globalRect: NSRect) -> CGImage? {
-        guard let base = snapshot.crop(toNS: globalRect), let s = selection else { return nil }
+        guard let snapshot, let base = snapshot.crop(toNS: globalRect), let s = selection else { return nil }
         guard !annotations.isEmpty else { return base }
         let scale = snapshot.pixelScale
         guard let ctx = CGContext(data: nil, width: base.width, height: base.height, bitsPerComponent: 8,
@@ -547,7 +573,7 @@ final class OverlayView: NSView {
     }
 
     private func copyColorUnderCursor() {
-        guard let c = snapshot.color(atNS: toGlobal(mouse)) else { return }
+        guard let c = snapshot?.color(atNS: toGlobal(mouse)) else { return }
         let text = colorAsRGB ? c.rgbString : c.hexString
         let pb = NSPasteboard.general
         pb.clearContents()
@@ -626,7 +652,7 @@ final class OverlayView: NSView {
 
         if action == .record {
             done = true
-            onOutcome?(.record(rect: globalRect, screen: snapshot.screen))
+            onOutcome?(.record(rect: globalRect, screen: display))
             return
         }
         guard let img = composeResult(globalRect) else { return }
@@ -643,9 +669,6 @@ final class OverlayView: NSView {
     private func cancel() {
         guard !done else { return }
         done = true
-        #if DEBUG
-                print("[overlay] cancelled")
-        #endif
         onOutcome?(.cancelled)
     }
 
@@ -671,10 +694,13 @@ final class OverlayView: NSView {
     // MARK: Drawing
 
     override func draw(_ dirtyRect: NSRect) {
-        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
-        ctx.draw(snapshot.image, in: bounds)
-        NSColor.black.withAlphaComponent(0.45).setFill()
-        bounds.fill()
+        // The frozen screen is not drawn here. It sits in the window's backdrop layer underneath this
+        // view, handed to the compositor once when the capture landed; this view paints only what
+        // changes. It used to blit the full-resolution screenshot through Core Graphics on every mouse
+        // move — twice, once under the dimming and once again inside the selection — which cost
+        // ~34 ms for the first frame of each screen and a colour-space conversion of every pixel on
+        // every frame after (measured 2026-09-11).
+        guard let snapshot, let ctx = NSGraphicsContext.current?.cgContext else { return }
 
         let isKey = window?.isKeyWindow ?? false
         let focus: NSRect?
@@ -698,17 +724,25 @@ final class OverlayView: NSView {
             focusTitle = nil
         }
 
-        if let f = focus, f.width > 0, f.height > 0 {
-            ctx.saveGState()
-            ctx.clip(to: f)
-            ctx.draw(snapshot.image, in: bounds)
+        // Dim everything except the focus. Punching the hole with an even-odd fill gives the same
+        // picture as dimming the whole screen and painting the undimmed screenshot back inside it.
+        let hole: NSRect? = focus.flatMap { $0.width > 0 && $0.height > 0 ? $0 : nil }
+        let dim = NSBezierPath(rect: bounds)
+        if let hole { dim.appendRect(hole) }
+        dim.windingRule = .evenOdd
+        NSColor.black.withAlphaComponent(0.45).setFill()
+        dim.fill()
+
+        if let f = hole {
             // Annotations are drawn only inside the selection
             if showHandles {
+                ctx.saveGState()
+                ctx.clip(to: f)
                 var inProgress: AnnotationShape?
                 if case .drawing(let s) = phase { inProgress = s }
                 annotations.render(in: ctx, extra: inProgress, mosaicSource: { [weak self] r in self?.mosaicSource(r) })
+                ctx.restoreGState()
             }
-            ctx.restoreGState()
 
             let border = NSBezierPath(rect: f.insetBy(dx: -1, dy: -1))
             border.lineWidth = showHandles ? 2 : 1.5
@@ -757,7 +791,8 @@ final class OverlayView: NSView {
 
     private func drawSizeLabel(for r: NSRect, title: String?) {
         var text = "\(Int(r.width)) × \(Int(r.height))"
-        if snapshot.pixelScale != 1 { text += "  @\(Int(snapshot.pixelScale))x" }
+        let scale = snapshot?.pixelScale ?? display.backingScaleFactor
+        if scale != 1 { text += "  @\(Int(scale))x" }
         if let title = title.map(Self.shortTitle), !title.isEmpty {
             text = "\(title)   ·   \(text)"
         }

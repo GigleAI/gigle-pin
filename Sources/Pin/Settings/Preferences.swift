@@ -81,6 +81,7 @@ final class Preferences {
         defaults.register(defaults: [
             Keys.copyAfterCapture: true,
             Keys.copyAfterRecord: true,
+            Keys.keepRecordings: true,
             Keys.playShutterSound: false,
             Keys.showMagnifier: true,
             Keys.autoDetectWindows: true,
@@ -115,6 +116,7 @@ final class Preferences {
         static let inkModifier          = "inkModifier"
         static let copyAfterCapture     = "copyAfterCapture"
         static let copyAfterRecord      = "copyAfterRecord"
+        static let keepRecordings       = "keepRecordings"
         static let playShutterSound     = "playShutterSound"
         static let showMagnifier        = "showMagnifier"
         static let autoDetectWindows    = "autoDetectWindows"
@@ -153,6 +155,15 @@ final class Preferences {
     var copyAfterRecord: Bool {
         get { defaults.bool(forKey: Keys.copyAfterRecord) }
         set { defaults.set(newValue, forKey: Keys.copyAfterRecord) }
+    }
+
+    /// Every recording lands in the save directory the moment it stops — the default, because a lost
+    /// take costs more than the disk it uses (Tim, 2026-09-11). Off, a take lives in the cache until
+    /// the review window's Save (or any action that hands the file out), and closing the window
+    /// discards it. See `UnsavedRecordings`.
+    var keepRecordings: Bool {
+        get { defaults.bool(forKey: Keys.keepRecordings) }
+        set { defaults.set(newValue, forKey: Keys.keepRecordings) }
     }
 
     var showMagnifier: Bool {

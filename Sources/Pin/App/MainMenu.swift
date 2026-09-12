@@ -2,7 +2,7 @@
 //
 // Normally unused — Pin is an `LSUIElement`, so all you see is the bird in the menu bar. But while
 // a review window is open the app switches to being an ordinary one (Dock icon, ⌘Tab; see
-// `AppDelegate.updateActivationPolicy`), and at that moment an empty `NSApp.mainMenu` means a menu
+// `ReviewCoordinator.updateActivationPolicy`), and at that moment an empty `NSApp.mainMenu` means a menu
 // bar with nothing in it — and ⌘W / ⌘Q / ⌘Z / ⌘C **all stop responding**, because they dispatch
 // through menu item key equivalents rather than being built into the system.
 //

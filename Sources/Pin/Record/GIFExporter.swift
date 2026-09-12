@@ -161,3 +161,19 @@ enum GIFExporter {
                        bytes: bytes ?? 0, reducedByBudget: reduced)
     }
 }
+
+extension GIFExporter {
+    /// One sentence describing a finished GIF, and why it is not what was asked for when it is not.
+    @MainActor static func describe(_ o: GIFExporter.Outcome) -> String {
+        let size = ByteCountFormatter.string(fromByteCount: Int64(o.bytes), countStyle: .file)
+        let base = Lf("gif.made", "%@ · %@ fps · %@",
+                      "\(o.width)×\(o.height)", String(format: "%.0f", o.fps), size)
+        // The budget reducing the picture is not something the user asked for, so it never happens
+        // quietly: a GIF smaller than the region they framed, with no explanation, reads as the app
+        // being bad at its job.
+        return o.reducedByBudget
+            ? base + " · " + L("gif.reduced", "reduced to keep memory in hand")
+            : base
+    }
+
+}

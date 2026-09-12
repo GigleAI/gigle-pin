@@ -137,3 +137,12 @@ enum AgentRequest {
         return Array(p.prefix(r.count)) == r
     }
 }
+
+
+extension AgentRequest {
+    /// A caller-named output is complete only after its producer has finished writing.
+    static func markDone(_ url: URL, requested: Bool) {
+        guard requested else { return }
+        try? Data().write(to: URL(fileURLWithPath: url.path + ".done"))
+    }
+}

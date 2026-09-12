@@ -20,6 +20,7 @@
 "bar.filled" = "实心：整块填色";
 "bar.gif" = "转成 GIF，体积更大但到处都能播   ·   G";
 "bar.hollow" = "空心：只画边框";
+"bar.keepTake" = "保留这段 — 保存到 %@   ·   S";
 "bar.pin" = "钉在屏幕最上层当参考，可缩放拖动   ·   P";
 "bar.record" = "改成录制这块区域   ·   R";
 "bar.redo" = "删掉这条，同一块区域重录   ·   R";
@@ -177,8 +178,11 @@
 "review.colorLabel" = "颜色";
 "review.copiedFile" = "已复制文件，⌘V 粘到微信 / Slack / Finder 就是发文件";
 "review.copiedPath" = "已复制路径 %@";
+"review.discarded" = "没有保存 — 这段录屏已丢弃";
+"review.discardedHow" = "设置 ▸ 录屏 里可以改成每段都自动保留";
 "review.gifDone2" = "GIF 已复制 · %@ · 存到 %@";
 "review.gifing" = "正在转 GIF，长片子要等一会儿…";
+"review.kept" = "已保存到 %@";
 "review.life" = "新画的一笔在视频里停留多久";
 "review.lifeForever" = "整段";
 "review.lifeLabel" = "停留";
@@ -191,7 +195,9 @@
 "review.sheeting" = "正在抽关键帧、拼成一张图…";
 "review.staleClipboard" = " · 剪贴板里那份还没批注，⏎ 重新复制";
 "review.title" = "回放 · 加批注";
+"review.titleUnsaved" = "回放 · 尚未保存";
 "review.toolHint" = "%@：在画面上画，这一笔会从当前时间点 %@ 起显示 %.1f 秒";
+"review.unsavedHint" = "尚未保存 — 按 S 保留；复制、导出也会一并保留";
 "review.width" = "线条粗细";
 "review.widthLabel" = "粗细";
 "review.zoom" = "放大画面 —— 录的区域小的时候用";
@@ -224,6 +230,7 @@
 "settings.inkForever" = "一直留着";
 "settings.inkKey" = "用哪个键画";
 "settings.inkLife" = "笔迹停留";
+"settings.keepRecordings" = "保留每段录屏，不只是按了保存的那些";
 "settings.langChanged" = "已切换，重开 Pin 生效。";
 "settings.language" = "语言";
 "settings.launchAtLogin" = "登录时启动 Pin";
@@ -233,6 +240,7 @@
 "settings.lookNote3" = "明暗和配色也作用于截图工具条、录屏 HUD 和回放浮条；选区蒙层始终压暗。改语言要重开 Pin。";
 "settings.magnifier" = "显示放大镜";
 "settings.mic" = "录制麦克风";
+"settings.openDir" = "打开";
 "settings.openSysPrefs" = "打开系统设置";
 "settings.palette" = "配色";
 "settings.permAX" = "辅助功能";

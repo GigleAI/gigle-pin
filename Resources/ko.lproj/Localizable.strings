@@ -20,6 +20,7 @@
 "bar.filled" = "채움: 단색";
 "bar.gif" = "GIF로 변환 — 용량은 크지만 어디서나 재생됩니다   ·   G";
 "bar.hollow" = "비움: 테두리만";
+"bar.keepTake" = "이 테이크 보관 — %@에 저장   ·   S";
 "bar.pin" = "참고용으로 맨 위에 고정. 확대하고 끌 수 있습니다   ·   P";
 "bar.record" = "이 영역 녹화로 전환   ·   R";
 "bar.redo" = "이번 것을 버리고 같은 영역을 다시 녹화   ·   R";
@@ -177,8 +178,11 @@
 "review.colorLabel" = "색";
 "review.copiedFile" = "파일을 복사했습니다 — Slack, 메일, Finder에 ⌘V로 보내세요";
 "review.copiedPath" = "경로를 복사했습니다: %@";
+"review.discarded" = "저장되지 않음 — 이 테이크는 사라졌습니다";
+"review.discardedHow" = "설정 ▸ 녹화에서 모든 테이크를 자동으로 보관할 수 있습니다";
 "review.gifDone2" = "GIF 복사됨 · %@ · 저장 위치 %@";
 "review.gifing" = "GIF를 만드는 중 — 긴 클립은 시간이 걸립니다…";
+"review.kept" = "%@에 저장됨";
 "review.life" = "새로 그린 선이 화면에 남는 시간";
 "review.lifeForever" = "클립 전체";
 "review.lifeLabel" = "표시 시간";
@@ -191,7 +195,9 @@
 "review.sheeting" = "키 프레임을 골라 배치하는 중…";
 "review.staleClipboard" = " · 클립보드의 파일에는 주석이 없습니다. ⏎로 다시 복사하세요";
 "review.title" = "재생 · 주석";
+"review.titleUnsaved" = "재생 · 아직 저장 안 됨";
 "review.toolHint" = "%@: 프레임에 그립니다. 이 표시는 %@부터 %.1f초 동안 보입니다";
+"review.unsavedHint" = "아직 저장 안 됨 — S로 보관, 복사나 내보내기를 해도 보관됩니다";
 "review.width" = "선 굵기";
 "review.widthLabel" = "굵기";
 "review.zoom" = "화면을 확대 — 녹화한 영역이 작을 때";
@@ -224,6 +230,7 @@
 "settings.inkForever" = "계속 두기";
 "settings.inkKey" = "그릴 때 쓸 키";
 "settings.inkLife" = "선이 남는 시간";
+"settings.keepRecordings" = "저장을 누른 테이크만이 아니라 모든 녹화를 보관";
 "settings.langChanged" = "변경했습니다 — Pin을 다시 실행하면 반영됩니다.";
 "settings.language" = "언어";
 "settings.launchAtLogin" = "로그인할 때 Pin 시작";
@@ -233,6 +240,7 @@
 "settings.lookNote3" = "밝게/어둡게와 색상은 캡처 도구 막대, 녹화 HUD, 재생 바에도 적용됩니다. 선택 오버레이는 항상 어두워집니다. 언어를 바꾸려면 다시 실행해야 합니다.";
 "settings.magnifier" = "돋보기 표시";
 "settings.mic" = "마이크 녹음";
+"settings.openDir" = "열기";
 "settings.openSysPrefs" = "시스템 설정 열기";
 "settings.palette" = "색상";
 "settings.permAX" = "손쉬운 사용";

@@ -20,6 +20,7 @@
 "bar.filled" = "Gefüllt: deckende Farbe";
 "bar.gif" = "In GIF umwandeln – größer, läuft aber überall   ·   G";
 "bar.hollow" = "Leer: nur Umriss";
+"bar.keepTake" = "Diese Aufnahme behalten — sichern in %@   ·   S";
 "bar.pin" = "Als Referenz über allem anheften; zoomen und ziehen möglich   ·   P";
 "bar.record" = "Zur Aufnahme dieses Bereichs wechseln   ·   R";
 "bar.redo" = "Diesen Versuch verwerfen und denselben Bereich neu aufnehmen   ·   R";
@@ -177,8 +178,11 @@
 "review.colorLabel" = "Farbe";
 "review.copiedFile" = "Datei kopiert – mit ⌘V in Slack, Mail oder Finder verschicken";
 "review.copiedPath" = "Pfad kopiert: %@";
+"review.discarded" = "Nicht gesichert — diese Aufnahme ist weg";
+"review.discardedHow" = "Einstellungen ▸ Video kann jede Aufnahme automatisch behalten";
 "review.gifDone2" = "GIF kopiert · %@ · gesichert in %@";
 "review.gifing" = "GIF wird erstellt – lange Clips brauchen einen Moment …";
+"review.kept" = "Gesichert in %@";
 "review.life" = "Wie lange ein neuer Strich sichtbar bleibt";
 "review.lifeForever" = "Ganzer Clip";
 "review.lifeLabel" = "Bleibt";
@@ -191,7 +195,9 @@
 "review.sheeting" = "Schlüsselbilder werden ausgewählt und angeordnet …";
 "review.staleClipboard" = " · die Kopie in der Zwischenablage hat keine Markierungen; ⏎ kopiert erneut";
 "review.title" = "Ansehen · markieren";
+"review.titleUnsaved" = "Ansehen · noch nicht gesichert";
 "review.toolHint" = "%@: aufs Bild zeichnen; diese Markierung ist ab %@ für %.1f Sekunden sichtbar";
+"review.unsavedHint" = "Noch nicht gesichert — S behält sie, ebenso alles, was sie weitergibt";
 "review.width" = "Linienstärke";
 "review.widthLabel" = "Stärke";
 "review.zoom" = "Bild vergrößern – für kleine aufgenommene Bereiche";
@@ -224,6 +230,7 @@
 "settings.inkForever" = "Bleibt stehen";
 "settings.inkKey" = "Zeichnen mit";
 "settings.inkLife" = "Strich bleibt";
+"settings.keepRecordings" = "Jede Aufnahme behalten, nicht nur die gesicherten";
 "settings.langChanged" = "Geändert – starte Pin neu, um es zu sehen.";
 "settings.language" = "Sprache";
 "settings.launchAtLogin" = "Pin beim Anmelden starten";
@@ -233,6 +240,7 @@
 "settings.lookNote3" = "Hell/dunkel und die Farbpalette gelten auch für die Werkzeugleiste, das Aufnahme-HUD und die Wiedergabeleiste; die Auswahlebene dunkelt immer ab. Ein Sprachwechsel braucht einen Neustart.";
 "settings.magnifier" = "Lupe anzeigen";
 "settings.mic" = "Mikrofon aufnehmen";
+"settings.openDir" = "Öffnen";
 "settings.openSysPrefs" = "Systemeinstellungen öffnen";
 "settings.palette" = "Farbpalette";
 "settings.permAX" = "Bedienungshilfen";

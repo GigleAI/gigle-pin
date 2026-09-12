@@ -11,17 +11,23 @@ import AVKit
 final class ReviewWindow: NSWindow, NSWindowDelegate {
 
     enum Action: String, CaseIterable {
-        case copyFile, copyPath, contactSheet, gif, reveal, redo, delete
+        case save, copyFile, copyPath, contactSheet, gif, reveal, redo, delete
+
+        /// Everything but discarding keeps the take: a copied path or a GIF beside a file that vanishes
+        /// when the window closes is a broken promise.
+        var keeps: Bool { self != .redo && self != .delete }
 
         var symbol: String {
             switch self {
+            case .save: "square.and.arrow.down"
             case .copyFile: "doc.on.doc"; case .copyPath: "text.quote"
             case .contactSheet: "square.grid.3x3"; case .gif: "photo.stack"
             case .reveal: "folder"; case .redo: "arrow.clockwise"; case .delete: "trash"
             }
         }
-        var tip: String {
+        @MainActor var tip: String {
             switch self {
+            case .save:         Lf("bar.keepTake", "Keep this take — save to %@   ·   S", readablePath(Preferences.shared.saveDirectory))
             case .copyFile:     L("bar.copyFile", "Copy the file — paste into Slack, Mail or Finder to send it   ·   ⏎")
             case .copyPath:     L("bar.copyPath", "Copy the path — paste into a terminal or Claude Code to reference it   ·   P")
             case .contactSheet: L("bar.sheet", "Contact sheet: one timestamped image, ⌘V it to an AI   ·   K")
@@ -34,6 +40,16 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
     }
 
     private(set) var url: URL
+    /// With "keep every recording" off, the take is in the cache until kept (`UnsavedRecordings`).
+    /// `startedPending` says the cache copy exists and has to go when the window closes; `kept` is
+    /// where the file went once the user decided.
+    let startedPending: Bool
+    private(set) var isPending: Bool
+    private(set) var kept: URL?
+    /// The file to hand out: the kept one once there is one.
+    var deliverable: URL { kept ?? url }
+    /// Set by Trash / re-record before closing, so the close is not reported as "discarded" as well.
+    var closesQuietly = false
     private let player: AVPlayer
     private let playerView = AVPlayerView()
     private let canvas: ReviewCanvas
@@ -65,9 +81,7 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
     private let track = TimedAnnotationTrack()
 
     var onAction: ((Action) -> Void)?
-    /// Called after exporting a new file with the annotations burned in (so the action bar can retarget
-    /// to it).
-    var onBurned: ((URL) -> Void)?
+    private var isClosed = false
 
     private var duration: Double = 0
     private var rate: Float = 1
@@ -87,8 +101,10 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
 
     /// `regionSize` is the point size of the region that was recorded; without it, convert from pixels
     /// using the screen's scale factor.
-    init(url: URL, regionSize: NSSize? = nil) {
+    init(url: URL, regionSize: NSSize? = nil, pending: Bool = false) {
         self.url = url
+        startedPending = pending
+        isPending = pending
         player = AVPlayer(url: url)
         canvas = ReviewCanvas()
         let asset = AVURLAsset(url: url)
@@ -119,7 +135,7 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
         super.init(contentRect: NSRect(origin: .zero, size: winSize),
                    styleMask: [.titled, .closable],
                    backing: .buffered, defer: false)
-        title = L("review.title", "Review · annotate")
+        title = pending ? L("review.titleUnsaved", "Review · not saved yet") : L("review.title", "Review · annotate")
         appearance = BarStyle.appearance
         backgroundColor = BarStyle.surface
         isReleasedWhenClosed = false
@@ -290,6 +306,8 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
             b.heightAnchor.constraint(equalToConstant: 24).isActive = true
             actionButtons[a] = b
             actionByButton[ObjectIdentifier(b)] = a
+            // Nothing to save when every take is kept as it stops — the stack closes the gap.
+            if a == .save { b.isHidden = !isPending }
             actionStack.addArrangedSubview(b)
         }
 
@@ -442,15 +460,15 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
     // MARK: - Playback
 
     private func load(asset: AVURLAsset) async {
-        let d = CMTimeGetSeconds(asset.duration)
+        let end = (try? await asset.load(.duration)) ?? .zero
+        guard !isClosed else { return }
+        let d = CMTimeGetSeconds(end)
         duration = d.isFinite ? d : 0
         scrubber.duration = duration
         // Stop on the last frame — of what you just recorded, the last frame is the result
-        await MainActor.run {
-            player.seek(to: asset.duration, toleranceBefore: .zero, toleranceAfter: .zero)
-            scrubber.current = duration
-            updateTimeLabel(duration)
-        }
+        player.seek(to: end, toleranceBefore: .zero, toleranceAfter: .zero, completionHandler: { _ in })
+        scrubber.current = duration
+        updateTimeLabel(duration)
         timeObserver = player.addPeriodicTimeObserver(
             forInterval: CMTime(seconds: 1.0 / 30, preferredTimescale: 600), queue: .main) { [weak self] t in
                 Task { @MainActor in self?.tick(CMTimeGetSeconds(t)) }
@@ -458,6 +476,7 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
     }
 
     private func tick(_ t: Double) {
+        guard !isClosed else { return }
         scrubber.current = t
         canvas.time = t
         updateTimeLabel(t)
@@ -609,7 +628,7 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
         onAction?(a)
     }
 
-    // ── Pressing something has to produce feedback (triggered from `AppDelegate.handleResult`, which
+    // ── Pressing something has to produce feedback (triggered from `ReviewCoordinator.handleResult`, which
     //    is what knows whether it worked and where the file went) ──
     // These actions used to play a `Pop` and nothing else: on a muted machine that is no feedback at
     // all, and converting to GIF or picking key frames runs for seconds with nothing moving on screen,
@@ -620,24 +639,33 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
 
     /// An instant action (copying): one sentence and done.
     func say(_ text: String, on a: Action, seconds: TimeInterval = 3) {
-        guard let b = actionButtons[a] else { return }
+        guard !isClosed, let b = actionButtons[a] else { return }
         HintBubble.flash(text, under: b, seconds: seconds)
     }
 
     /// A slow action starting: grey the button out (against double presses) and pin a bubble that hover
     /// cannot displace.
     func begin(_ text: String, on a: Action) {
-        guard let b = actionButtons[a] else { return }
+        guard !isClosed, let b = actionButtons[a] else { return }
         b.isEnabled = false
         HintBubble.pin(text, under: b)
     }
 
     /// Finished (called on success and failure alike): restore the button and say what happened.
     func finish(_ text: String, on a: Action, seconds: TimeInterval = 5) {
-        guard let b = actionButtons[a] else { return }
+        guard !isClosed, let b = actionButtons[a] else { return }
         b.isEnabled = true
         HintBubble.unpin()
         HintBubble.flash(text, under: b, seconds: seconds)
+    }
+
+    /// The take is now in the save directory: drop the Save button and the "not saved" title.
+    func markKept(at dst: URL) {
+        kept = dst
+        isPending = false
+        actionButtons[.save]?.isHidden = true
+        title = L("review.title", "Review · annotate")
+        placeBar()
     }
 
     /// The canvas finished a stroke; store it on the track with the current time.
@@ -675,13 +703,13 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
     /// Export a new file with the annotations burned in; without annotations, return the original.
     func burnIfNeeded(progress: @escaping @Sendable (Double) -> Void) async -> URL {
         guard !track.isEmpty else { return url }
-        let out = url.deletingPathExtension().appendingPathExtension("annotated.mp4")
+        // Beside the kept file, not the cache copy, so it is still there after the window closes
+        let out = deliverable.deletingPathExtension().appendingPathExtension("annotated.mp4")
         do {
             try await AnnotationBurner.burn(source: url, track: track.strokes, to: out, progress: progress)
             #if DEBUG
                         print("[review] burn-in finished → \(out.lastPathComponent)")
             #endif
-            onBurned?(out)
             return out
         } catch {
             #if DEBUG
@@ -744,6 +772,7 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
         switch (e.keyCode, e.charactersIgnoringModifiers?.lowercased() ?? "") {
                 case (36, _), (76, _): .copyFile        // ⏎ / keypad ⏎
         case (51, _):          .delete          // ⌫
+        case (_, "s"):         .save
         case (_, "p"):         .copyPath
         case (_, "k"):         .contactSheet
         case (_, "g"):         .gif
@@ -797,6 +826,7 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
         canvas.mouseUp(with: ev(.leftMouseUp, b))
     }
     func debugAction(_ name: String) {
+        if name == "close" { close(); return }
         guard let a = Action.allCases.first(where: { "\($0)" == name }) else { return }
         onAction?(a)
     }
@@ -835,12 +865,17 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
     /// attached.
     func windowWillClose(_ notification: Notification) {
         teardown()
-        onClosed?()
+        let closed = onClosed
+        onClosed = nil
+        closed?()
     }
 
     var onClosed: (() -> Void)?
 
     func teardown() {
+        guard !isClosed else { return }
+        isClosed = true
+        onAction = nil
         if let timeObserver { player.removeTimeObserver(timeObserver) }
         timeObserver = nil
         player.pause()
@@ -849,34 +884,6 @@ final class ReviewWindow: NSWindow, NSWindowDelegate {
         removeChildWindow(bar)
         bar.orderOut(nil)
     }
-}
-
-/// A button that reports when the mouse moves over it.
-///
-/// A tooltip takes a second to appear and is set in small type, neither of which suits a toolbar that
-/// gets scanned at a glance; explanations all appear on the bar's bottom line, on hover.
-@MainActor
-final class HoverButton: NSButton {
-    /// Setting a hint **clears the tooltip automatically**. Keeping both shows the same sentence twice —
-    /// the hint line appears on hover, and the system tooltip adds an identical one a second later
-    /// (photographed by Tim, 2026-09-05: why does the same text appear twice?).
-    /// Toolbars always use the hint line: a tooltip is too slow and too small for somewhere scanned at
-    /// a glance.
-    var hint: String? { didSet { if hint != nil { toolTip = nil } } }
-    var onHover: ((HoverButton, String?) -> Void)?
-    private var tracking: NSTrackingArea?
-
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        if let tracking { removeTrackingArea(tracking) }
-        let t = NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeAlways],
-                               owner: self, userInfo: nil)
-        addTrackingArea(t)
-        tracking = t
-    }
-
-    override func mouseEntered(with event: NSEvent) { onHover?(self, hint) }
-    override func mouseExited(with event: NSEvent) { onHover?(self, nil) }
 }
 
 // MARK: - Scrubber

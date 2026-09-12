@@ -29,7 +29,8 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
     static let shared = SettingsWindowController()
 
     private let prefs = Preferences.shared
-    private var dirLabel: NSTextField!
+    // One per pane that shows it (Capture and Recording share the directory); all updated on Choose…
+    private var dirLabels: [NSTextField] = []
     private var hotkeyFields: [HotkeyAction: HotkeyField] = [:]
     private let hotkeyNote = NSTextField(wrappingLabelWithString: "")
     private let langNote = NSTextField(labelWithString: "")
@@ -409,27 +410,7 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
             stack.addArrangedSubview(indent(langNote))
 
         case .capture:
-            // Show Pictures/Pin rather than /Users/someone/Pictures/Pin — shorter, does not expose the
-            // user name, and safe to have in a screenshot.
-            dirLabel = NSTextField(labelWithString: readablePath(prefs.saveDirectory))
-            dirLabel.lineBreakMode = .byTruncatingMiddle
-            dirLabel.textColor = .secondaryLabelColor
-            dirLabel.font = .systemFont(ofSize: 11)
-            dirLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-            let pick = NSButton(title: L("settings.chooseDir", "Choose…"), target: self, action: #selector(chooseDir))
-            pick.translatesAutoresizingMaskIntoConstraints = false
-            // **The minimum is not a fixed number**: 「选择…」 is 71pt in Chinese while "Choose…" needs
-            // 91pt, and pinning it at 76 truncates the English button to "Cho…". The minimum exists so
-            // the button does not shrink to a sliver in Chinese; a longer title should be as wide as it
-            // needs (measured with an offscreen NSButton on 2026-09-06 08:2x — invisible from a Chinese
-            // interface).
-            pick.widthAnchor.constraint(greaterThanOrEqualToConstant: 76).isActive = true
-            let dirRow = NSStackView()
-            dirRow.orientation = .horizontal
-            dirRow.spacing = 8
-            dirRow.addArrangedSubview(pick)
-            dirRow.addArrangedSubview(dirLabel)
-            stack.addArrangedSubview(field(L("settings.saveTo", "Save to"), dirRow))
+            stack.addArrangedSubview(field(L("settings.saveTo", "Save to"), saveToRow()))
             stack.addArrangedSubview(spacer(2))
             for (t, on, h) in [
                 (L("settings.copyAfter", "Also copy to the clipboard after capture"), prefs.copyAfterCapture, { (v: Bool) in self.prefs.copyAfterCapture = v }),
@@ -441,6 +422,9 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
             }
 
         case .record:
+            // The same directory as captures, shown here as well: someone looking for where the
+            // videos go looks in Recording, not Capture (Tim, 2026-09-11).
+            stack.addArrangedSubview(field(L("settings.saveTo", "Save to"), saveToRow()))
             let fmt = NSPopUpButton()
             // The pop-up items need translating too. An item hardcoded as "3 秒" is an untranslated
             // line of Chinese in an English interface (seen as "Ink stays for: 3 秒" in an English
@@ -475,6 +459,7 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
             stack.addArrangedSubview(field(L("settings.inkKey", "Draw with"), inkMod))
             stack.addArrangedSubview(spacer(2))
             for (t, on, h) in [
+                (L("settings.keepRecordings", "Keep every recording, not only the ones you press Save on"), prefs.keepRecordings, { (v: Bool) in self.prefs.keepRecordings = v }),
                 (L("settings.copyAfterRecord", "Copy the file to the clipboard when recording stops"), prefs.copyAfterRecord, { (v: Bool) in self.prefs.copyAfterRecord = v }),
                 (L("settings.cursor", "Record the cursor"), prefs.recordShowCursor, { (v: Bool) in self.prefs.recordShowCursor = v }),
                 (L("settings.ripple2", "Ripple on click, so viewers see where you clicked"), prefs.recordHighlightClicks, { (v: Bool) in self.prefs.recordHighlightClicks = v }),
@@ -837,9 +822,48 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
                 "The hotkey only works while Pin is running, so after a restart it does nothing until Pin opens.")
     }
 
+    /// Choose… beside the current directory. Show Pictures/Pin rather than /Users/someone/Pictures/Pin —
+    /// shorter, does not expose the user name, and safe to have in a screenshot.
+    private func saveToRow() -> NSView {
+        let label = NSTextField(labelWithString: readablePath(prefs.saveDirectory))
+        label.lineBreakMode = .byTruncatingMiddle
+        label.textColor = .secondaryLabelColor
+        label.font = .systemFont(ofSize: 11)
+        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        dirLabels.append(label)
+        let pick = NSButton(title: L("settings.chooseDir", "Choose…"), target: self, action: #selector(chooseDir))
+        pick.translatesAutoresizingMaskIntoConstraints = false
+        // **The minimum is not a fixed number**: 「选择…」 is 71pt in Chinese while "Choose…" needs
+        // 91pt, and pinning it at 76 truncates the English button to "Cho…". The minimum exists so
+        // the button does not shrink to a sliver in Chinese; a longer title should be as wide as it
+        // needs (measured with an offscreen NSButton on 2026-09-06 08:2x — invisible from a Chinese
+        // interface).
+        pick.widthAnchor.constraint(greaterThanOrEqualToConstant: 76).isActive = true
+        // "Open" beside it: the row answers "where do they go", this answers "show me" — the menu bar
+        // has had an Open Folder item, but someone reading the path here has no reason to know that
+        // (Tim, 2026-09-11).
+        let show = NSButton(title: L("settings.openDir", "Open"), target: self, action: #selector(openDir))
+        show.translatesAutoresizingMaskIntoConstraints = false
+        let row = NSStackView()
+        row.orientation = .horizontal
+        row.spacing = 8
+        row.addArrangedSubview(pick)
+        row.addArrangedSubview(show)
+        row.addArrangedSubview(label)
+        return row
+    }
+
     private func check(_ t: String, _ on: Bool, _ handler: @escaping (Bool) -> Void) -> NSButton {
         let b = NSButton(checkboxWithTitle: t, target: self, action: #selector(checkChanged(_:)))
         b.state = on ? .on : .off
+        // A long title wraps to a second line instead of being cut off. The column after the indent
+        // is 370pt; German and French run 20–30% past the English the layout was made on, and
+        // truncation is silent — "Datei beim Stoppen der Aufnahme in die Zwischen…" shipped for days,
+        // because only the labels were being measured (fit-check, 2026-09-11).
+        b.lineBreakMode = .byWordWrapping
+        b.translatesAutoresizingMaskIntoConstraints = false
+        b.widthAnchor.constraint(lessThanOrEqualToConstant: 370).isActive = true
+        b.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         checkHandlers[ObjectIdentifier(b)] = handler
         return b
     }
@@ -953,6 +977,10 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
         checkHandlers[ObjectIdentifier(sender)]?(sender.state == .on)
     }
 
+    @objc private func openDir() {
+        NSWorkspace.shared.open(prefs.ensureSaveDirectory())
+    }
+
     @objc private func chooseDir() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
@@ -961,7 +989,7 @@ final class SettingsWindowController: NSWindowController, NSToolbarDelegate {
         panel.directoryURL = prefs.saveDirectory
         guard panel.runModal() == .OK, let url = panel.url else { return }
         prefs.saveDirectory = url
-        dirLabel.stringValue = readablePath(url)
+        for l in dirLabels { l.stringValue = readablePath(url) }
     }
 
     @objc private func languageChanged(_ s: NSPopUpButton) {

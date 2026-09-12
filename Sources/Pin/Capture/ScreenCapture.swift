@@ -9,7 +9,10 @@ import CoreImage
 /// it slams a still image over the desktop first. That way the content cannot
 /// shift under the crosshair while you are dragging, and the magnifier can
 /// read exact pixels without another round trip to the window server.
-struct DisplaySnapshot {
+/// `@unchecked Sendable`: every field is a `let`, the image is immutable, and `NSScreen` is only
+/// read for its frame — the displays are captured on parallel tasks and the results cross back to
+/// the main actor, which is the one place they are used.
+struct DisplaySnapshot: @unchecked Sendable {
     let screen: NSScreen
     let displayID: CGDirectDisplayID
     /// Pixel-resolution image (on Retina this is 2x the point size).
@@ -114,56 +117,94 @@ enum CaptureError: Error, LocalizedError {
     }
 }
 
+/// Everything one display's capture needs, bundled so it can be handed to a task as one value.
+/// `@unchecked` because `SCDisplay`, `SCWindow` and `NSScreen` are not Sendable, and are only read.
+struct CaptureJob: @unchecked Sendable {
+    let index: Int
+    let display: SCDisplay
+    let screen: NSScreen
+    let excluded: [SCWindow]
+
+    var displayID: CGDirectDisplayID { display.displayID }
+
+    func run() async throws -> DisplaySnapshot {
+        tmark("cap\(index)-start")
+        defer { tmark("cap\(index)-end") }
+        let filter = SCContentFilter(display: display, excludingWindows: excluded)
+        let config = SCStreamConfiguration()
+        config.width = Int(CGFloat(display.width) * screen.pixelScale)
+        config.height = Int(CGFloat(display.height) * screen.pixelScale)
+        config.showsCursor = false
+        config.captureResolution = .best
+        config.pixelFormat = kCVPixelFormatType_32BGRA
+        config.colorSpaceName = CGColorSpace.sRGB
+        do {
+            let image = try await SCScreenshotManager.captureImage(contentFilter: filter,
+                                                                  configuration: config)
+            return DisplaySnapshot(screen: screen, displayID: display.displayID,
+                                   image: image, frame: screen.frame)
+        } catch {
+            throw CaptureError.captureFailed(error.localizedDescription)
+        }
+    }
+}
+
 /// Thin wrapper over ScreenCaptureKit for one-shot stills.
 enum ScreenCapture {
 
-    /// Grabs every attached display at once. We freeze all of them so dragging
-    /// a selection across a monitor boundary keeps working.
-    static func snapshotAllDisplays() async throws -> [DisplaySnapshot] {
-        let content: SCShareableContent
+    /// Everything on screen right now, as ScreenCaptureKit sees it. ~45 ms; the one part of a
+    /// capture that cannot be split up or skipped, so callers start it first and do other work
+    /// while it runs.
+    static func shareableContent() async throws -> SCShareableContent {
         do {
-            content = try await SCShareableContent.excludingDesktopWindows(false,
-                                                                          onScreenWindowsOnly: true)
+            let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+            tmark("content")
+            guard !content.displays.isEmpty else { throw CaptureError.noDisplays }
+            return content
+        } catch let e as CaptureError {
+            throw e
         } catch {
             // SCK reports a missing TCC grant as a generic failure, so treat
             // any failure to enumerate content as "not allowed yet".
             throw CaptureError.permissionDenied
         }
-        guard !content.displays.isEmpty else { throw CaptureError.noDisplays }
+    }
 
-        // Exclude only the capture session's own chrome (overlay, toolbars, HUD, hint bubbles,
-        // permission cards), not the whole Pin app — that would make our own settings window
-        // uncapturable, and writing docs, filing bugs and recording demos all need it (Tim,
-        // 2026-09-05). The settings window, the welcome window and pins are real things on the
-        // screen, so what you see is what you get.
-        let chrome = await MainActor.run { CaptureChromeRegistry.windowIDs }
+    /// One capture job per display, in ScreenCaptureKit's order. Each is a single Sendable value
+    /// that can be handed to a task; run them however the caller likes.
+    ///
+    /// Exclude only the capture session's own chrome (overlay, toolbars, HUD, hint bubbles,
+    /// permission cards), not the whole Pin app — that would make our own settings window
+    /// uncapturable, and writing docs, filing bugs and recording demos all need it (Tim,
+    /// 2026-09-05). The settings window, the welcome window and pins are real things on the
+    /// screen, so what you see is what you get.
+    ///
+    /// `excludingWindowIDs` is passed in rather than read here so that nothing in the capture path
+    /// touches the main actor: the caller reads the chrome registry once, and the main thread is
+    /// then free to build the overlay windows while the captures are in flight.
+    static func jobs(in content: SCShareableContent, excludingWindowIDs chrome: [CGWindowID]) -> [CaptureJob] {
         let chromeSet = Set(chrome)
         let excluded = content.windows.filter { chromeSet.contains($0.windowID) }
+        return content.displays.enumerated().compactMap { index, display in
+            NSScreen.screens.first { $0.displayID == display.displayID }
+                .map { CaptureJob(index: index, display: display, screen: $0, excluded: excluded) }
+        }
+    }
 
-        var snapshots: [DisplaySnapshot] = []
-        for display in content.displays {
-            guard let screen = NSScreen.screens.first(where: { $0.displayID == display.displayID })
-            else { continue }
-
-            let filter = SCContentFilter(display: display, excludingWindows: excluded)
-            let config = SCStreamConfiguration()
-            config.width = Int(CGFloat(display.width) * screen.pixelScale)
-            config.height = Int(CGFloat(display.height) * screen.pixelScale)
-            config.showsCursor = false
-            config.captureResolution = .best
-            config.pixelFormat = kCVPixelFormatType_32BGRA
-            config.colorSpaceName = CGColorSpace.sRGB
-
-            do {
-                let image = try await SCScreenshotManager.captureImage(contentFilter: filter,
-                                                                      configuration: config)
-                snapshots.append(DisplaySnapshot(screen: screen,
-                                                 displayID: display.displayID,
-                                                 image: image,
-                                                 frame: screen.frame))
-            } catch {
-                throw CaptureError.captureFailed(error.localizedDescription)
+    /// Grabs every attached display at once, concurrently, in display order. We freeze all of them
+    /// so dragging a selection across a monitor boundary keeps working.
+    static func snapshotAllDisplays(excludingWindowIDs chrome: [CGWindowID]) async throws -> [DisplaySnapshot] {
+        let content = try await shareableContent()
+        let jobs = jobs(in: content, excludingWindowIDs: chrome)
+        guard !jobs.isEmpty else { throw CaptureError.noDisplays }
+        let snapshots: [DisplaySnapshot] = try await withThrowingTaskGroup(of: (Int, DisplaySnapshot).self) { group in
+            for job in jobs {
+                group.addTask { try await (job.index, job.run()) }
             }
+            // Keep the display order stable whatever order the captures finish in.
+            var ordered = [DisplaySnapshot?](repeating: nil, count: jobs.count)
+            for try await (index, shot) in group { ordered[index] = shot }
+            return ordered.compactMap { $0 }
         }
         guard !snapshots.isEmpty else { throw CaptureError.noDisplays }
         return snapshots

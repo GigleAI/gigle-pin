@@ -171,11 +171,15 @@ enum AnnotationBurner {
         comp.animationTool = AVVideoCompositionCoreAnimationTool(
             postProcessingAsVideoLayer: videoLayer, in: parent)
 
-        try? FileManager.default.removeItem(at: output)
+        // Each export writes a private file. Reopening a review while an older export drains must
+        // not delete that export's destination, or destroy the last good result on failure.
+        let temporary = output.deletingLastPathComponent()
+            .appendingPathComponent(".\(UUID().uuidString).annotated.mp4")
+        defer { try? FileManager.default.removeItem(at: temporary) }
         guard let export = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetHighestQuality) else {
             throw RecorderError.writerFailed(L("err.noExporter", "Could not create the export session"))
         }
-        export.outputURL = output
+        export.outputURL = temporary
         export.outputFileType = .mp4
         export.videoComposition = comp
 
@@ -190,6 +194,11 @@ enum AnnotationBurner {
         ticker.cancel()
         if export.status != .completed {
             throw RecorderError.writerFailed(export.error?.localizedDescription ?? L("err.exportFailed", "Export failed"))
+        }
+        if FileManager.default.fileExists(atPath: output.path) {
+            _ = try FileManager.default.replaceItemAt(output, withItemAt: temporary)
+        } else {
+            try FileManager.default.moveItem(at: temporary, to: output)
         }
     }
 

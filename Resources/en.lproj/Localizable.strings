@@ -20,6 +20,7 @@
 "bar.filled" = "Filled: solid color";
 "bar.gif" = "Convert to GIF — bigger, but plays anywhere   ·   G";
 "bar.hollow" = "Hollow: outline only";
+"bar.keepTake" = "Keep this take — save to %@   ·   S";
 "bar.pin" = "Pin it on top of everything as a reference; zoom and drag it   ·   P";
 "bar.record" = "Switch to recording this region   ·   R";
 "bar.redo" = "Discard this take and record the same region again   ·   R";
@@ -177,8 +178,11 @@
 "review.colorLabel" = "Color";
 "review.copiedFile" = "File copied — ⌘V into Slack, Mail or Finder to send it";
 "review.copiedPath" = "Path copied: %@";
+"review.discarded" = "Not saved — that take is gone";
+"review.discardedHow" = "Settings ▸ Recording can keep every take automatically";
 "review.gifDone2" = "GIF copied · %@ · saved to %@";
 "review.gifing" = "Making the GIF — long clips take a moment…";
+"review.kept" = "Saved to %@";
 "review.life" = "How long a new stroke stays on screen";
 "review.lifeForever" = "Whole clip";
 "review.lifeLabel" = "Stays";
@@ -191,7 +195,9 @@
 "review.sheeting" = "Picking the key frames and laying them out…";
 "review.staleClipboard" = " · the copy on your clipboard has no annotations; ⏎ to copy again";
 "review.title" = "Review · annotate";
+"review.titleUnsaved" = "Review · not saved yet";
 "review.toolHint" = "%@: draw on the frame; this mark shows from %@ for %.1f seconds";
+"review.unsavedHint" = "Not saved yet — S keeps it, and so does anything that sends it out";
 "review.width" = "Line width";
 "review.widthLabel" = "Width";
 "review.zoom" = "Enlarge the picture — for when the region you recorded is small";
@@ -224,6 +230,7 @@
 "settings.inkForever" = "Keep it";
 "settings.inkKey" = "Draw with";
 "settings.inkLife" = "Ink stays for";
+"settings.keepRecordings" = "Keep every recording, not only the ones you press Save on";
 "settings.langChanged" = "Changed — restart Pin to see it.";
 "settings.language" = "Language";
 "settings.launchAtLogin" = "Start Pin when I log in";
@@ -233,6 +240,7 @@
 "settings.lookNote3" = "Light/dark and the palette also apply to the capture toolbar, recording HUD and review bar; the selection overlay always dims. Changing the language needs a restart.";
 "settings.magnifier" = "Show the magnifier";
 "settings.mic" = "Record the microphone";
+"settings.openDir" = "Open";
 "settings.openSysPrefs" = "Open System Settings";
 "settings.palette" = "Palette";
 "settings.permAX" = "Accessibility";

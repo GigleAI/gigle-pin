@@ -9,6 +9,9 @@ struct SnapTarget {
     let title: String?
     /// Smaller number means closer to the front / deeper in the hierarchy.
     let depth: Int
+    /// The process that owns the window, when this came from the window list. It is who the
+    /// control-level question is put to.
+    var pid: pid_t? = nil
 }
 
 /// Reproduces Snipaste's "hover a window and it lights up" behaviour.
@@ -30,14 +33,18 @@ final class WindowDetector {
         windows = Self.onScreenWindows()
     }
 
-    /// Best rectangle to snap to for a cursor position in NS global space,
-    /// or `nil` when the cursor is over bare desktop.
+    /// The window-level answer, at once and without leaving the process: the frontmost on-screen
+    /// window under the point, from the list read when the overlay opened.
+    ///
+    /// The control-level answer is a separate, asynchronous question — see `refine(at:_:)`. It used
+    /// to be asked right here, synchronously: `AXUIElementCopyElementAtPosition` is a round trip
+    /// into whichever process owns the pixels under the cursor, and it ran on the main thread on
+    /// every mouse move. Median 7 ms, 36 ms seen, and unbounded when that app was busy — the overlay
+    /// simply stopped following the mouse until Chrome or Xcode got round to answering (measured
+    /// 2026-09-11). That was the "sometimes it sticks" the user felt.
     func target(at point: NSPoint) -> SnapTarget? {
-        if let element = Self.accessibilityElement(at: point) {
-            return element
-        }
         // Windows are ordered front-to-back, so the first hit is the topmost.
-        return windows.first { $0.frame.contains(point) }
+        windows.first { $0.frame.contains(point) }
     }
 
     // MARK: - CGWindowList
@@ -68,13 +75,61 @@ final class WindowDetector {
             let owner = info[kCGWindowOwnerName as String] as? String
             return SnapTarget(frame: Geometry.nsRect(fromCG: bounds),
                               title: name?.isEmpty == false ? name : owner,
-                              depth: index)
+                              depth: index, pid: pid)
         }
     }
 
-    // MARK: - Accessibility (optional precision pass)
+    // MARK: - Accessibility (optional precision pass, off the main thread)
 
-    /// True once the user has ticked Jay under Privacy ▸ Accessibility.
+    private static let axQueue = DispatchQueue(label: "ai.gigle.pin.ax", qos: .userInteractive)
+    private var axBusy = false
+    private var axPending: (point: NSPoint, pid: pid_t, deliver: @MainActor @Sendable (NSPoint, SnapTarget?) -> Void)?
+
+    /// Ask the app that owns the window under the cursor which control is there, and deliver the
+    /// answer later, with the point it was asked for so the caller can drop it if the mouse has
+    /// moved on.
+    ///
+    /// **The question goes to that one application, never to the system-wide element.** A
+    /// system-wide lookup resolves whatever is topmost at the point — which, with the overlay up, is
+    /// our own window — and HIServices serves a lookup into the calling process *on the calling
+    /// thread*: it walked `NSApplication.accessibilityHitTest` into `OverlayView.isFlipped` on the
+    /// AX queue and the main-actor executor check trapped (crash report 2026-09-11 15:16:08).
+    /// Addressing the owning process is also simply the better question: it cannot be answered by
+    /// some other floating panel that happens to sit above the window.
+    ///
+    /// Only the latest question is kept: while one is in flight, newer points replace each other
+    /// and the last one is asked when the answer comes back. Asking every one would let a busy app
+    /// build a queue of stale questions behind it.
+    func refine(at point: NSPoint, app pid: pid_t,
+                _ deliver: @escaping @MainActor @Sendable (NSPoint, SnapTarget?) -> Void) {
+        guard Self.accessibilityGranted else { return }
+        axPending = (point, pid, deliver)
+        pumpAX()
+    }
+
+    private func pumpAX() {
+        guard !axBusy, let pending = axPending else { return }
+        axPending = nil
+        axBusy = true
+        let point = pending.point, pid = pending.pid, deliver = pending.deliver
+        let cg = Geometry.cgPoint(fromNS: point)
+        Self.axQueue.async {
+            let probe = Self.axProbe(at: cg, app: pid)
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.axBusy = false
+                let target = probe.map { p in
+                    SnapTarget(frame: Geometry.nsRect(fromCG: p.rect),
+                               title: p.title ?? p.role.map { Self.humanRole($0) },
+                               depth: -1)
+                }
+                deliver(point, target)
+                self.pumpAX()
+            }
+        }
+    }
+
+    /// True once the user has ticked Pin under Privacy ▸ Accessibility.
     static var accessibilityGranted: Bool {
         AXIsProcessTrusted()
     }
@@ -87,14 +142,26 @@ final class WindowDetector {
         AXIsProcessTrustedWithOptions(options as CFDictionary)
     }
 
-    private static func accessibilityElement(at point: NSPoint) -> SnapTarget? {
-        guard accessibilityGranted else { return nil }
-
-        let system = AXUIElementCreateSystemWide()
+    /// The raw accessibility lookup. Runs on `axQueue`; touches nothing of ours, so it needs no
+    /// actor. Returns CG geometry and strings — the conversion to our types happens on the main
+    /// actor, where `Geometry` and localisation live.
+    nonisolated private static func axProbe(at cg: CGPoint, app pid: pid_t) -> (rect: CGRect, title: String?, role: String?)? {
+        #if DEBUG
+        let started = ProcessInfo.processInfo.systemUptime
+        defer {
+            let ms = Int((ProcessInfo.processInfo.systemUptime - started) * 1000)
+            if ms > 4 { print("[ax] \(ms)ms") }
+        }
+        #endif
+        let app = AXUIElementCreateApplication(pid)
+        // A cap on how long a hung application may keep us waiting. Off the main thread this only
+        // delays the control-level frame; without it an unresponsive app could hold the queue
+        // indefinitely.
+        _ = AXUIElementSetMessagingTimeout(app, 0.2)
         var element: AXUIElement?
-        let cg = Geometry.cgPoint(fromNS: point)
-        guard AXUIElementCopyElementAtPosition(system, Float(cg.x), Float(cg.y), &element) == .success,
+        guard AXUIElementCopyElementAtPosition(app, Float(cg.x), Float(cg.y), &element) == .success,
               let element else { return nil }
+        _ = AXUIElementSetMessagingTimeout(element, 0.2)
 
         // Ignore the AX result when it resolves to the whole window or the whole app — the
         // CGWindowList path carries the window title, while AX only offers "AXWindow".
@@ -116,14 +183,13 @@ final class WindowDetector {
         let rect = CGRect(origin: origin, size: size)
         guard rect.width > 8, rect.height > 8, rect.contains(cg) else { return nil }
 
-        // Label: prefer the element's own title or description, then fall back to a readable role.
+        // Label: prefer the element's own title or description; the role is mapped to words later.
         let title = (attr(element, kAXTitleAttribute) as? String).flatMap { $0.isEmpty ? nil : $0 }
             ?? (attr(element, kAXDescriptionAttribute) as? String).flatMap { $0.isEmpty ? nil : $0 }
-            ?? role.map(humanRole)
-        return SnapTarget(frame: Geometry.nsRect(fromCG: rect), title: title, depth: -1)
+        return (rect, title, role)
     }
 
-    private static func attr(_ e: AXUIElement, _ name: String) -> CFTypeRef? {
+    nonisolated private static func attr(_ e: AXUIElement, _ name: String) -> CFTypeRef? {
         var v: CFTypeRef?
         return AXUIElementCopyAttributeValue(e, name as CFString, &v) == .success ? v : nil
     }

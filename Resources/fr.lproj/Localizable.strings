@@ -20,6 +20,7 @@
 "bar.filled" = "Plein : couleur unie";
 "bar.gif" = "Convertir en GIF — plus lourd, mais lisible partout   ·   G";
 "bar.hollow" = "Creux : contour seul";
+"bar.keepTake" = "Conserver cette prise — enregistrer dans %@   ·   S";
 "bar.pin" = "Épingler par-dessus tout comme référence ; zoom et déplacement possibles   ·   P";
 "bar.record" = "Passer à l’enregistrement de cette zone   ·   R";
 "bar.redo" = "Jeter cette prise et réenregistrer la même zone   ·   R";
@@ -177,8 +178,11 @@
 "review.colorLabel" = "Couleur";
 "review.copiedFile" = "Fichier copié — ⌘V dans Slack, Mail ou le Finder pour l’envoyer";
 "review.copiedPath" = "Chemin copié : %@";
+"review.discarded" = "Non enregistré — cette prise est perdue";
+"review.discardedHow" = "Réglages ▸ Enregistrement peut conserver chaque prise automatiquement";
 "review.gifDone2" = "GIF copié · %@ · enregistré dans %@";
 "review.gifing" = "Création du GIF — les clips longs prennent un moment…";
+"review.kept" = "Enregistré dans %@";
 "review.life" = "Durée d’affichage d’un nouveau tracé";
 "review.lifeForever" = "Tout le clip";
 "review.lifeLabel" = "Reste";
@@ -191,7 +195,9 @@
 "review.sheeting" = "Sélection et mise en page des images clés…";
 "review.staleClipboard" = " · la copie dans le presse-papiers n’a pas les annotations ; ⏎ pour recopier";
 "review.title" = "Relecture · annotation";
+"review.titleUnsaved" = "Relecture · pas encore enregistré";
 "review.toolHint" = "%@ : dessine sur l’image ; cette marque apparaît à partir de %@ pendant %.1f secondes";
+"review.unsavedHint" = "Pas encore enregistré — S la conserve, comme tout ce qui l’envoie ailleurs";
 "review.width" = "Épaisseur du trait";
 "review.widthLabel" = "Épaisseur";
 "review.zoom" = "Agrandir l’image — utile quand la zone enregistrée est petite";
@@ -224,6 +230,7 @@
 "settings.inkForever" = "Le garder";
 "settings.inkKey" = "Dessiner avec";
 "settings.inkLife" = "Le tracé reste";
+"settings.keepRecordings" = "Conserver chaque prise, pas seulement celles que vous enregistrez";
 "settings.langChanged" = "Modifié — relance Pin pour le voir.";
 "settings.language" = "Langue";
 "settings.launchAtLogin" = "Lancer Pin à l’ouverture de session";
@@ -233,6 +240,7 @@
 "settings.lookNote3" = "Le clair/sombre et la palette s’appliquent aussi à la barre d’outils, au HUD d’enregistrement et à la barre de relecture ; la couche de sélection assombrit toujours. Changer de langue demande un redémarrage.";
 "settings.magnifier" = "Afficher la loupe";
 "settings.mic" = "Enregistrer le micro";
+"settings.openDir" = "Ouvrir";
 "settings.openSysPrefs" = "Ouvrir les Réglages Système";
 "settings.palette" = "Palette";
 "settings.permAX" = "Accessibilité";

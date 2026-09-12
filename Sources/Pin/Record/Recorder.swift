@@ -25,6 +25,10 @@ enum RecorderError: Error, LocalizedError {
 
 final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureAudioDataOutputSampleBufferDelegate, @unchecked Sendable {
 
+    // RecordingSession creates one of these per take. Do not reuse paused time, mute state or
+    // delayed media callbacks for another recording. The lifecycle joins start before stop.
+    @MainActor private var hasStarted = false
+
     private let queue = DispatchQueue(label: "ai.gigle.pin.recorder")
     private var stream: SCStream?
     private var writer: AVAssetWriter?
@@ -100,7 +104,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureAudio
     /// which must not be recorded.
     @MainActor
     func start(rect: NSRect, screen: NSScreen, excludingWindowIDs: [CGWindowID], output: URL) async throws {
-        guard !isRecording else { throw RecorderError.alreadyRecording }
+        guard !hasStarted else { throw RecorderError.alreadyRecording }
+        hasStarted = true
         let prefs = Preferences.shared
         let fps = max(10, min(prefs.recordFrameRate, 60))
         let wantsSystemAudio = prefs.recordSystemAudio

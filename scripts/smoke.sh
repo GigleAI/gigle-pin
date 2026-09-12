@@ -28,7 +28,7 @@ pkill -x "Gigle Pin" 2>/dev/null; sleep 0.5
 
 # 1. A URL arriving at a cold start (historically the easiest place to crash: the URL beats
 #    didFinishLaunching)
-open -a "$APP" "pin://settings" >/dev/null 2>&1
+open -g -a "$APP" "pin://settings" >/dev/null 2>&1
 sleep 3
 alive && ok "survives a URL at cold start" || { bad "died at cold start"; exit 1; }
 pkill -x "Gigle Pin"; sleep 0.5
@@ -47,14 +47,14 @@ has "registered capture .* → ok" && ok "capture hotkey registered" || bad "cap
 has "screenRecording=true"   && ok "screen recording permission" || bad "no screen recording permission — everything below will fail"
 
 # 3. Capture a region straight to the clipboard
-open -a "$APP" "pin://sniprect?x=100&y=100&w=300&h=200"; sleep 2
+open -g -a "$APP" "pin://sniprect?x=100&y=100&w=300&h=200"; sleep 2
 has "copied 300×200" && ok "sniprect → clipboard" || bad "sniprect produced nothing"
 alive || { bad "crashed after sniprect"; exit 1; }
 
 # 4. Open the overlay and close it
-open -a "$APP" "pin://snip"; sleep 1.5
+open -g -a "$APP" "pin://snip"; sleep 1.5
 has "ready," && ok "overlay came up" || bad "overlay did not come up"
-open -a "$APP" "pin://cancel"; sleep 0.8
+open -g -a "$APP" "pin://cancel"; sleep 0.8
 alive || { bad "crashed after the overlay"; exit 1; }
 
 # 5. Record for 2 seconds
@@ -63,7 +63,7 @@ alive || { bad "crashed after the overlay"; exit 1; }
 # behind by another check (or chosen by the user) makes a perfectly good recording look like no
 # recording at all. The log line is the product telling us what it did, which is what every other
 # assertion here reads.
-open -a "$APP" "pin://record?x=100&y=100&w=480&h=300&seconds=2"; sleep 7
+open -g -a "$APP" "pin://record?x=100&y=100&w=480&h=300&seconds=2"; sleep 7
 F=$(grep -a '\[record\] done → ' "$LOG" | tail -1 | sed 's/.*\[record\] done → //')
 if [[ -n "$F" && -f "$F" ]]; then
     # **The video stream has to be selected explicitly.** With system audio on by default the mp4 has
@@ -88,9 +88,9 @@ alive || { bad "crashed after recording"; exit 1; }
 
 # 6. Pin an image, then close them all
 screencapture -x -R 0,0,200,120 "$LOG.png" 2>/dev/null
-open -a "$APP" "pin://pin?file=$LOG.png"; sleep 1
+open -g -a "$APP" "pin://pin?file=$LOG.png"; sleep 1
 has "\[pin\] pinned" && ok "pinning" || bad "nothing was pinned"
-open -a "$APP" "pin://pins?close=1"; sleep 0.8
+open -g -a "$APP" "pin://pins?close=1"; sleep 0.8
 alive || { bad "crashed after pinning"; exit 1; }
 
 pkill -x "Gigle Pin" 2>/dev/null

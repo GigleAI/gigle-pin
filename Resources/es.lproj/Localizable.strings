@@ -20,6 +20,7 @@
 "bar.filled" = "Relleno: color sólido";
 "bar.gif" = "Convertir a GIF — más pesado, pero se ve en cualquier sitio   ·   G";
 "bar.hollow" = "Hueco: solo contorno";
+"bar.keepTake" = "Conservar esta toma — guardar en %@   ·   S";
 "bar.pin" = "Fíjalo encima de todo como referencia; puedes ampliarlo y arrastrarlo   ·   P";
 "bar.record" = "Cambiar a grabar esta zona   ·   R";
 "bar.redo" = "Descartar esta toma y volver a grabar la misma zona   ·   R";
@@ -177,8 +178,11 @@
 "review.colorLabel" = "Color";
 "review.copiedFile" = "Archivo copiado — ⌘V en Slack, Mail o el Finder para enviarlo";
 "review.copiedPath" = "Ruta copiada: %@";
+"review.discarded" = "Sin guardar — esa toma se ha perdido";
+"review.discardedHow" = "Ajustes ▸ Grabación puede conservar todas las tomas automáticamente";
 "review.gifDone2" = "GIF copiado · %@ · guardado en %@";
 "review.gifing" = "Creando el GIF — los clips largos tardan un poco…";
+"review.kept" = "Guardado en %@";
 "review.life" = "Cuánto se queda en pantalla un trazo nuevo";
 "review.lifeForever" = "Todo el clip";
 "review.lifeLabel" = "Se queda";
@@ -191,7 +195,9 @@
 "review.sheeting" = "Eligiendo los fotogramas clave y colocándolos…";
 "review.staleClipboard" = " · la copia del portapapeles no lleva anotaciones; ⏎ para copiar de nuevo";
 "review.title" = "Revisar · anotar";
+"review.titleUnsaved" = "Revisar · aún sin guardar";
 "review.toolHint" = "%@: dibuja sobre el fotograma; esta marca se ve desde %@ durante %.1f segundos";
+"review.unsavedHint" = "Aún sin guardar — S la conserva, igual que cualquier acción que la envíe fuera";
 "review.width" = "Grosor del trazo";
 "review.widthLabel" = "Grosor";
 "review.zoom" = "Ampliar la imagen — para cuando la zona grabada es pequeña";
@@ -224,6 +230,7 @@
 "settings.inkForever" = "Que se quede";
 "settings.inkKey" = "Dibujar con";
 "settings.inkLife" = "El trazo dura";
+"settings.keepRecordings" = "Conservar todas las tomas, no solo las que guardas";
 "settings.langChanged" = "Cambiado — reinicia Pin para verlo.";
 "settings.language" = "Idioma";
 "settings.launchAtLogin" = "Abrir Pin al iniciar sesión";
@@ -233,6 +240,7 @@
 "settings.lookNote3" = "El claro/oscuro y la paleta se aplican también a la barra de captura, al HUD de grabación y a la barra de revisión; la capa de selección siempre oscurece. Cambiar de idioma requiere reiniciar.";
 "settings.magnifier" = "Mostrar la lupa";
 "settings.mic" = "Grabar el micrófono";
+"settings.openDir" = "Abrir";
 "settings.openSysPrefs" = "Abrir Ajustes del Sistema";
 "settings.palette" = "Paleta";
 "settings.permAX" = "Accesibilidad";

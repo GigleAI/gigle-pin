@@ -294,13 +294,14 @@ private final class LiveCanvas: NSView {
     }
 
     func extend(to p: NSPoint) {
+        let before = strokes.last.map { Self.bounds(of: $0) } ?? .null
         guard var s = strokes.last else { return }
         s.b = p
         if s.tool == .marker, let last = s.points.last,
            hypot(p.x - last.x, p.y - last.y) >= 1.5 { s.points.append(p) }
                 s.bornAt = Date()          // still drawing, so keep it alive
         strokes[strokes.count - 1] = s
-        needsDisplay = true
+        invalidate([s], also: before)
     }
 
     func finish() {
@@ -322,16 +323,45 @@ private final class LiveCanvas: NSView {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self, !self.strokes.isEmpty else { return }
+                let dying = self.strokes.filter { $0.isDead }
                 self.strokes.removeAll { $0.isDead }
-                self.needsDisplay = true
+                self.invalidate(self.strokes + dying)
             }
         }
         timer.map { RunLoop.main.add($0, forMode: .common) }
     }
     func stopTicking() { timer?.invalidate(); timer = nil }
 
+    /// The area a stroke can touch, with room for the arrowhead and the marker's triple width.
+    private static func bounds(of s: Stroke) -> NSRect {
+        var r: NSRect
+        switch s.tool {
+        case .marker:
+            guard let first = s.points.first else { return .null }
+            r = s.points.dropFirst().reduce(NSRect(origin: first, size: .zero)) {
+                $0.union(NSRect(origin: $1, size: .zero))
+            }
+        default:
+            r = Geometry.rect(from: s.a, to: s.b)
+        }
+        let pad = max(16, s.width * 4) + s.width * 3 + 4
+        return r.insetBy(dx: -pad, dy: -pad)
+    }
+
+    /// Redraw only where ink is. This view covers the whole recorded region, and the fade timer
+    /// used to invalidate all of it thirty times a second while any stroke was on screen — a
+    /// full-region redraw and re-upload, competing with the encoder for the same frames. The
+    /// window server only has to touch the union of the strokes' bounds now.
+    private func invalidate(_ strokes: [Stroke], also extra: NSRect = .null) {
+        let r = strokes.reduce(extra) { $0.union(Self.bounds(of: $1)) }
+        guard !r.isNull else { return }
+        setNeedsDisplay(r)
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+        // Partial redraws start from whatever was there; the ink is translucent, so it would stack.
+        ctx.clear(dirtyRect)
         let now = Date()
         let life = owner?.life ?? 3
         let fade = owner?.fade ?? 0.6

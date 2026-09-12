@@ -9,18 +9,40 @@ struct CaptureResult {
     /// Where the selection sat on screen, in NS global coordinates (origin bottom-left). This is
     /// what lets a pin go back exactly where it came from.
     let screenRect: NSRect
+    /// One encode, shared. "Save, then copy to the clipboard" is the default path, and it used to
+    /// encode the same picture to PNG twice — on the main thread, before the overlay could go away.
+    private let encoded = Encoded()
+
+    init(image: CGImage, screenRect: NSRect) {
+        self.image = image
+        self.screenRect = screenRect
+    }
 
     var nsImage: NSImage {
         NSImage(cgImage: image, size: screenRect.size)
     }
 
-    var pngData: Data? {
+    /// PNG bytes, encoded once on a background thread and remembered for the next caller.
+    /// Main-actor because every caller is, and because the memo is a plain class field.
+    @MainActor func png() async -> Data? {
+        if let task = encoded.png { return await task.value }
+        let image = image, size = screenRect.size
+        let task = Task.detached(priority: .userInitiated) { Self.encodePNG(image, size: size) }
+        encoded.png = task
+        return await task.value
+    }
+
+    /// The synchronous encode, for the one caller that already sits behind a modal panel.
+    var pngData: Data? { Self.encodePNG(image, size: screenRect.size) }
+
+    private static func encodePNG(_ image: CGImage, size: NSSize) -> Data? {
         let rep = NSBitmapImageRep(cgImage: image)
-                rep.size = screenRect.size   // write the DPI so "displayed size" equals the on-screen points
+        rep.size = size   // write the DPI so "displayed size" equals the on-screen points
         return rep.representation(using: .png, properties: [:])
     }
-}
 
+    private final class Encoded { var png: Task<Data?, Never>? }
+}
 @MainActor
 enum Exporter {
 
@@ -38,15 +60,22 @@ enum Exporter {
     ///
     /// One item carrying both types is what every app expects, and the order matters: PNG is added
     /// first because the first type added is the highest priority one.
-    static func copy(_ result: CaptureResult) {
+    ///
+    /// Both representations are produced off the main thread. A full-screen PNG takes on the order
+    /// of 100–300 ms to encode, and it used to happen right here, on the main thread, between
+    /// pressing Return and the overlay fading out — a pause at the end of every single capture.
+    static func copy(_ result: CaptureResult) async {
+        let png = await result.png()
+        let cg = result.image, size = result.screenRect.size
+        let tiff = await Task.detached(priority: .userInitiated) { NSImage(cgImage: cg, size: size).tiffRepresentation }.value
         let pb = NSPasteboard.general
         pb.clearContents()
         let item = NSPasteboardItem()
         var ok = false
-        if let png = result.pngData {
+        if let png {
             ok = item.setData(png, forType: .png)
         }
-        if let tiff = result.nsImage.tiffRepresentation {
+        if let tiff {
             item.setData(tiff, forType: .tiff)
         }
         // Writing an item with no representations would silently empty the clipboard; the image
@@ -63,8 +92,8 @@ enum Exporter {
 
     /// Save into the directory from preferences, with a timestamped name. Returns where it landed.
     @discardableResult
-    static func save(_ result: CaptureResult, to requested: URL? = nil) -> URL? {
-        guard let png = result.pngData else { return nil }
+    static func save(_ result: CaptureResult, to requested: URL? = nil) async -> URL? {
+        guard let png = await result.png() else { return nil }
         let url: URL
         if let requested {
             // A path the agent chose itself: it knows where the file is, so it never has to guess.
@@ -77,18 +106,20 @@ enum Exporter {
             let dir = Preferences.shared.ensureSaveDirectory()
             url = FileNaming.unique(in: dir, base: "Pin \(Self.stamp())", ext: "png")
         }
-        do {
-            try png.write(to: url, options: .atomic)
+        // The write goes off the main thread too; the toast that says where it landed waits for it.
+        let failure: Error? = await Task.detached(priority: .userInitiated) {
+            do { try png.write(to: url, options: .atomic); return nil } catch { return error }
+        }.value
+        if let failure {
             #if DEBUG
-                        print("[capture] saved \(url.path)")
-            #endif
-            return url
-        } catch {
-            #if DEBUG
-                        print("[capture] save failed \(error)")
+                        print("[capture] save failed \(failure)")
             #endif
             return nil
         }
+        #if DEBUG
+                    print("[capture] saved \(url.path)")
+        #endif
+        return url
     }
 
     /// Move an already-saved file to somewhere the user picks.

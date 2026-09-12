@@ -166,3 +166,38 @@ specifics, all of them learned the expensive way:
   `moov atom not found`. Record N seconds, wait N+2.
 - **Prove the test can fail.** Every check here was run once against code known
   to be broken. Four of them passed anyway, and were rewritten.
+
+
+## The capture overlay's first frame
+
+- **Three ScreenCaptureKit captures at once contend.** On a three-display machine each took
+  80–250 ms in parallel against ~75 ms alone, so the total barely moved. Capture the display under
+  the cursor first, on its own, and bring it up; the others follow ~100 ms later, before anyone can
+  drag to them.
+- **Drawing the frozen screen through Core Graphics was not colour-accurate.** A CGImage tagged
+  sRGB drawn into the window backing store came out ~4.5/255 off on saturated colours (a teal of
+  (2,208,177) rendered as (77,214,185)). The same image as `CALayer.contents` matches the live
+  screen to within 0.06. It is also the difference between blitting five megapixels on every mouse
+  move and painting only the dimming.
+- **Never ask the system-wide accessibility element for the element under a point from a
+  background thread while your own window is there.** HIServices answers a lookup into the calling
+  process *on the calling thread*: it walked `NSApplication.accessibilityHitTest` into a
+  main-actor `NSView` and the executor check trapped. Ask the application that owns the window
+  under the point (`AXUIElementCreateApplication(pid)`) — it can never resolve to yourself, and it
+  is the better question anyway.
+- **A second copy of the bundle anywhere on disk steals your URL scheme.** Launch Services
+  registers it, and `open -a <path> pin://…` starts delivering to whichever copy it likes.
+  Measurements taken that way are noise. Unregister copies (`lsregister -u`) and have the check
+  assert that every URL it sent arrived in the process it is watching.
+
+## A width nobody set is still a width
+
+The fit check measured every control that has an explicit width constraint, in seven languages, and
+passed. The settings checkboxes have no such constraint — their width comes from the column they sit
+in, about 370pt — and the German and French titles ran 60pt past it, cut off with an ellipsis that
+never appears in English. A container's width is a slot too. The fix is not shorter translations (the
+next language grows back) but wrapping, plus a check that measures the wrapped height.
+
+A warning that scrolls off the screen is not a warning. The string scanner had flagged a key used with
+two different English sentences; the line sat in the middle of a page of output and nobody saw it. It
+now exits non-zero.
